@@ -50,6 +50,7 @@ Builds the encrypted search cache from a Passwords CSV export. Alfred never runs
 Run it once to set up, then again whenever your passwords change:
 
 1. Export your passwords to a CSV file: in the Passwords app, **File → Export All Passwords…**
+   Save it to a RAM disk (see [Security](#security)).
 2. Run:
 
    ```sh
@@ -65,6 +66,16 @@ The script:
 
 The cache can only be decrypted on the Mac that created it. If you delete the seed or move to another Mac,
 run the sync again.
+
+#### Security
+
+The CSV export contains every password in clear text. Even though `setup-cache.rb` deletes it, a file
+written to your disk can be indexed by Spotlight or copied by Time Machine before then, and deleted
+data can stay recoverable on the drive.
+
+Export it to a RAM disk instead, so it never touches the disk. [RAM Folder](https://less-software.sh/ram-folder)
+is a modern, reliable way to do this: create a RAM Folder with **Sync RAM Folder** turned off, save the
+export there, and pass that path to `setup-cache.rb`.
 
 ### `alfred-filter-script.rb`: Alfred Script Filter
 
