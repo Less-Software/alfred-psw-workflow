@@ -95,3 +95,7 @@ whose username matches to the clipboard.
 
 Both action scripts use `/usr/bin/jq` if present, otherwise `$(brew --prefix jq)/bin/jq`, and show a
 macOS notification if jq is missing or if the lookup fails.
+
+## Sponsoring
+
+If this workflow is useful to you, consider [sponsoring Less Software on GitHub](https://github.com/sponsors/Less-Software).
