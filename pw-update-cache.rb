@@ -13,8 +13,12 @@ SEED_PATH = File.expand_path('~/.config/pw-alfred-workflow/seed')
 CACHE_PATH = File.expand_path('~/.cache/pw-alfred-workflow/apw_cache.enc')
 SALT = 'pw-alfred-workflow'
 
-# Expects the CSV path as the first argument, or defaults to a standard Downloads location / drop-in path
-csv_path = ARGV[0] ? File.expand_path(ARGV[0]) : File.expand_path('~/Temp/Secure/Passwords.csv')
+if ARGV[0].to_s.empty?
+  STDERR.puts "Usage: #{File.basename($0)} <Passwords.csv>"
+  exit 1
+end
+
+csv_path = File.expand_path(ARGV[0])
 
 unless File.exist?(csv_path)
   STDERR.puts "Error: Passwords CSV file not found at #{csv_path}"
