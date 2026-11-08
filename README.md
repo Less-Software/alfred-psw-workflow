@@ -1,4 +1,4 @@
-# pw-alfred-workflow
+# alfred-pw-workflow
 
 Alfred workflow to search Apple Passwords entries and copy a password or OTP code to the clipboard.
 
@@ -59,9 +59,9 @@ Run it once to set up, then again whenever your passwords change:
 
 The script:
 
-- creates `~/.config/pw-alfred-workflow/seed` (random, mode `600`) if it doesn't exist yet,
+- creates `~/.config/alfred-pw-workflow/seed` (random, mode `600`) if it doesn't exist yet,
 - derives the encryption key from that seed and this Mac's hardware UUID,
-- writes the title, domain and username of each entry to `~/.cache/pw-alfred-workflow/apw_cache.enc` (mode `600`),
+- writes the title, domain and username of each entry to `~/.cache/alfred-pw-workflow/apw_cache.enc` (mode `600`),
 - **deletes the CSV file**, even if parsing fails.
 
 The cache can only be decrypted on the Mac that created it. If you delete the seed or move to another Mac,

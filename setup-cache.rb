@@ -12,9 +12,9 @@ require 'fileutils'
 require 'securerandom'
 require 'uri'
 
-SEED_PATH = File.expand_path('~/.config/pw-alfred-workflow/seed')
-CACHE_PATH = File.expand_path('~/.cache/pw-alfred-workflow/apw_cache.enc')
-SALT = 'pw-alfred-workflow'
+SEED_PATH = File.expand_path('~/.config/alfred-pw-workflow/seed')
+CACHE_PATH = File.expand_path('~/.cache/alfred-pw-workflow/apw_cache.enc')
+SALT = 'alfred-pw-workflow'
 
 if ARGV[0].to_s.empty?
   STDERR.puts "Usage: #{File.basename($0)} <Passwords.csv>"
