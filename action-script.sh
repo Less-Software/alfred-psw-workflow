@@ -11,10 +11,6 @@ DOMAIN=$(echo "$DOMAIN" | xargs)
 APW_JSON_OUTPUT=$(/opt/homebrew/bin/apw pw get "$DOMAIN" "$USERNAME")
 EXIT_CODE=$?
 
-# Optional debugging logs
-echo "USERNAME: $USERNAME" >> /Users/sam/Temp/alfred.log
-echo "DOMAIN: $DOMAIN" >> /Users/sam/Temp/alfred.log
-
 if [ $EXIT_CODE -ne 0 ] || [ -z "$APW_JSON_OUTPUT" ]; then
   osascript -e 'display notification "apw execution failed or canceled" with title "Error"'
   exit 1
@@ -22,8 +18,6 @@ fi
 
 # Parse the JSON response using yq to extract the first result's password
 PASSWORD=$(echo "$APW_JSON_OUTPUT" | /opt/homebrew/bin/yq '.results[0].password' | tr -d '\n')
-echo "PASSWORD: $PASSWORD" >> /Users/sam/Temp/alfred.log
-
 
 if [ $? -eq 0 ] && [ -n "$PASSWORD" ] && [ "$PASSWORD" != "null" ]; then
   echo -n "$PASSWORD" | pbcopy
