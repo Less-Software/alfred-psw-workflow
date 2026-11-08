@@ -1,4 +1,7 @@
-#!/usr/bin/env ruby
+#!/bin/sh
+# A shebang can't call brew: re-run with Homebrew's ruby; -x makes ruby skip to the #!ruby line
+exec "$(brew --prefix ruby)/bin/ruby" -x "$0" "$@"
+#!ruby
 # encoding: utf-8
 
 require 'csv'

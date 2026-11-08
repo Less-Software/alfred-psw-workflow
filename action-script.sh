@@ -7,17 +7,18 @@ IFS='|' read -r USERNAME DOMAIN <<< "$@"
 USERNAME=$(echo "$USERNAME" | xargs)
 DOMAIN=$(echo "$DOMAIN" | xargs)
 
-# Alfred has no user $PATH: prefer system jq (macOS 15+), then Homebrew (Apple Silicon, Intel)
-for JQ in /usr/bin/jq /opt/homebrew/bin/jq /usr/local/bin/jq ""; do
-  [ -x "$JQ" ] && break
-done
-if [ -z "$JQ" ]; then
+APW="$(brew --prefix apw)/bin/apw"
+
+# Prefer system jq (macOS 15+), then Homebrew's
+JQ=/usr/bin/jq
+[ -x "$JQ" ] || JQ="$(brew --prefix jq)/bin/jq"
+if [ ! -x "$JQ" ]; then
   osascript -e 'display notification "jq not found: brew install jq" with title "Error"'
   exit 1
 fi
 
 # Call apw with domain and username
-APW_JSON_OUTPUT=$(/opt/homebrew/bin/apw pw get "$DOMAIN" "$USERNAME")
+APW_JSON_OUTPUT=$("$APW" pw get "$DOMAIN" "$USERNAME")
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -ne 0 ] || [ -z "$APW_JSON_OUTPUT" ]; then
