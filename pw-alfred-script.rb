@@ -5,7 +5,7 @@ require 'json'
 require 'openssl'
 require 'base64'
 
-CONFIG_PATH = File.expand_path('~/.config/pw-alfred-workflow/config.json')
+SEED_PATH = File.expand_path('~/.config/pw-alfred-workflow/seed')
 CACHE_PATH = File.expand_path('~/.cache/pw-alfred-workflow/apw_cache.enc')
 SALT = 'pw-alfred-workflow'
 
@@ -26,9 +26,9 @@ if query.length < 4
   exit 0
 end
 
-unless File.exist?(CONFIG_PATH) || File.exist?(CACHE_PATH)
+unless File.exist?(SEED_PATH) && File.exist?(CACHE_PATH)
   response = {
-    items: [{ title: "Configuration or Cache missing. Please run sync.", valid: false }]
+    items: [{ title: "Seed or Cache missing. Please run sync.", valid: false }]
   }
   puts JSON.generate(response)
   exit 0
@@ -36,9 +36,12 @@ end
 
 begin
   # Derive decryption key
-  config_data = JSON.parse(File.read(CONFIG_PATH))
-  seed = config_data['seed'] || config_data.to_s
-  key = OpenSSL::PKCS5.pbkdf2_hmac(seed, SALT, 10000, 32, OpenSSL::Digest.new('SHA1'))
+  seed = File.read(SEED_PATH).strip
+  raise "seed file #{SEED_PATH} is empty" if seed.empty?
+  # Bind the key to this Mac: a copied seed + cache is useless elsewhere
+  hw_uuid = `/usr/sbin/ioreg -rd1 -c IOPlatformExpertDevice`[/"IOPlatformUUID" = "([^"]+)"/, 1]
+  raise 'cannot read hardware UUID' unless hw_uuid
+  key = OpenSSL::PKCS5.pbkdf2_hmac(seed, "#{SALT}|#{hw_uuid}", 10000, 32, OpenSSL::Digest.new('SHA1'))
 
   # Read and decrypt cache
   encrypted_store = JSON.parse(File.read(CACHE_PATH))

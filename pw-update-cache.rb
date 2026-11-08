@@ -6,9 +6,10 @@ require 'json'
 require 'openssl'
 require 'base64'
 require 'fileutils'
+require 'securerandom'
 require 'uri'
 
-CONFIG_PATH = File.expand_path('~/.config/pw-alfred-workflow/config.json')
+SEED_PATH = File.expand_path('~/.config/pw-alfred-workflow/seed')
 CACHE_PATH = File.expand_path('~/.cache/pw-alfred-workflow/apw_cache.enc')
 SALT = 'pw-alfred-workflow'
 
@@ -20,18 +21,21 @@ unless File.exist?(csv_path)
   exit 1
 end
 
-unless File.exist?(CONFIG_PATH)
-  STDERR.puts "Error: Config file not found at #{CONFIG_PATH}"
-  exit 1
-end
-
-# 1. Derive encryption key from config seed
+# 1. Derive encryption key from seed (generated on first run)
 begin
-  config_data = JSON.parse(File.read(CONFIG_PATH))
-  seed = config_data['seed'] || config_data.to_s
-  key = OpenSSL::PKCS5.pbkdf2_hmac(seed, SALT, 10000, 32, OpenSSL::Digest.new('SHA1'))
+  unless File.exist?(SEED_PATH)
+    FileUtils.mkdir_p(File.dirname(SEED_PATH), mode: 0700)
+    File.open(SEED_PATH, File::WRONLY | File::CREAT | File::EXCL, 0600) { |f| f.write(SecureRandom.hex(32)) }
+    puts "Generated new seed at #{SEED_PATH}"
+  end
+  seed = File.read(SEED_PATH).strip
+  raise "seed file #{SEED_PATH} is empty" if seed.empty?
+  # Bind the key to this Mac: a copied seed + cache is useless elsewhere
+  hw_uuid = `/usr/sbin/ioreg -rd1 -c IOPlatformExpertDevice`[/"IOPlatformUUID" = "([^"]+)"/, 1]
+  raise 'cannot read hardware UUID' unless hw_uuid
+  key = OpenSSL::PKCS5.pbkdf2_hmac(seed, "#{SALT}|#{hw_uuid}", 10000, 32, OpenSSL::Digest.new('SHA1'))
 rescue => e
-  STDERR.puts "Error reading config seed: #{e.message}"
+  STDERR.puts "Error reading seed: #{e.message}"
   exit 1
 end
 
