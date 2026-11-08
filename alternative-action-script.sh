@@ -7,6 +7,15 @@ IFS='|' read -r USERNAME DOMAIN <<< "$@"
 USERNAME=$(echo "$USERNAME" | xargs)
 DOMAIN=$(echo "$DOMAIN" | xargs)
 
+# Alfred has no user $PATH: prefer system jq (macOS 15+), then Homebrew (Apple Silicon, Intel)
+for JQ in /usr/bin/jq /opt/homebrew/bin/jq /usr/local/bin/jq ""; do
+  [ -x "$JQ" ] && break
+done
+if [ -z "$JQ" ]; then
+  osascript -e 'display notification "jq not found: brew install jq" with title "Error"'
+  exit 1
+fi
+
 APW_JSON_OUTPUT=$(/opt/homebrew/bin/apw otp get "$DOMAIN")
 EXIT_CODE=$?
 
@@ -15,8 +24,8 @@ if [ $EXIT_CODE -ne 0 ] || [ -z "$APW_JSON_OUTPUT" ]; then
   exit 1
 fi
 
-# /usr/bin/jq ships with macOS 15+; first entry whose username matches
-OTP=$(echo "$APW_JSON_OUTPUT" | /usr/bin/jq -r --arg u "$USERNAME" \
+# First entry whose username matches
+OTP=$(echo "$APW_JSON_OUTPUT" | "$JQ" -r --arg u "$USERNAME" \
   'first(.results[]? | select(.username == $u) | .code) // empty')
 
 if [ -n "$OTP" ]; then
