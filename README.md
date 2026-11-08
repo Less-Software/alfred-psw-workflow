@@ -44,7 +44,7 @@ them with Homebrew's ruby, because a shebang line can't call `brew`.
 
 ## Files
 
-### `pw-update-cache.rb`: cache sync (run manually in Terminal)
+### `setup-cache.rb`: cache sync (run manually in Terminal)
 
 Builds the encrypted search cache from a Passwords CSV export. Alfred never runs it.
 Run it once to set up, then again whenever your passwords change:
@@ -53,7 +53,7 @@ Run it once to set up, then again whenever your passwords change:
 2. Run:
 
    ```sh
-   ./pw-update-cache.rb ~/path/to/Passwords.csv
+   ./setup-cache.rb ~/path/to/Passwords.csv
    ```
 
 The script:
@@ -66,18 +66,18 @@ The script:
 The cache can only be decrypted on the Mac that created it. If you delete the seed or move to another Mac,
 run the sync again.
 
-### `pw-alfred-script.rb`: Alfred Script Filter
+### `alfred-filter-script.rb`: Alfred Script Filter
 
 Runs on every keystroke with the query as `$1`. Once the query has at least 4 characters, it decrypts
 the cache, keeps the entries whose title, domain or username contains the query, and returns them to Alfred
 as Script Filter JSON. Each result's `arg` is `username|domain`.
 
-### `action-script.sh`: Alfred action (default)
+### `action.sh`: Alfred action (default)
 
 Receives `username|domain`, runs `apw pw get <domain> <username>`, and copies the first result's password
 to the clipboard.
 
-### `alternative-action-script.sh`: Alfred alternative action (modifier key)
+### `alternative-action.sh`: Alfred alternative action (modifier key)
 
 Receives `username|domain`, runs `apw otp get <domain>`, and copies the OTP `code` of the first result
 whose username matches to the clipboard.
