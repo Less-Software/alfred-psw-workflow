@@ -1,8 +1,11 @@
 # alfred-pw-workflow (macOS only)
 
-Alfred workflow that lets you search Apple Passwords entries and copy a password or OTP code to the clipboard.
+Alfred workflow that lets you search Apple **Passwords.app** entries and copy a password (main action) or OTP code 
+(alternative action) to *a secure, expiring clipboard*.
 
-Searching uses a local encrypted cache of titles, domains and usernames (never passwords).
+Searching uses a pre-computed local encrypted cache of titles, domains and usernames (never passwords).
+This cache is created from a **Passwords.csv** export from **Password.app**, and imported via `pwsync`.
+ 
 Passwords and OTP codes are fetched live from Apple Passwords through [apw](https://github.com/bendews/apw),
 and require authentication before being copied (via main password or Touch ID).
 
