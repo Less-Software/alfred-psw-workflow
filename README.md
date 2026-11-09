@@ -29,7 +29,11 @@ On the selected entry:
 Touch ID is then required to unlock the entry. A notification confirms the copy.
 The clipboard is cleared 30 seconds later, unless you copied something else meanwhile (see [Security](#security)).
 
-<img width="764" height="402" alt="'psw john' query in Alfred" src="https://github.com/user-attachments/assets/c4e9efce-2a9b-4c0a-a935-4dd9e9250f8d" />
+<br>
+<div align="center">
+  <img width="764" height="402" alt="'psw john' query in Alfred" src="https://github.com/user-attachments/assets/c4e9efce-2a9b-4c0a-a935-4dd9e9250f8d" />
+</div>
+<br>
 
 ## Setup
 
