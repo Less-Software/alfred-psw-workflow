@@ -44,6 +44,45 @@
 				<false/>
 			</dict>
 		</array>
+		<key>70F5D84F-5D9B-45F9-B0BB-A6751BEA9382</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>F284F4B9-F0C0-4962-8CB7-6F5FE6F02126</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>819AF915-8578-42EF-8CEC-A9716FEBFEF9</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>F284F4B9-F0C0-4962-8CB7-6F5FE6F02126</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>C940C8DD-FAA8-49AF-ABBE-5B5E35EFE9BD</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>F284F4B9-F0C0-4962-8CB7-6F5FE6F02126</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
 	</dict>
 	<key>createdby</key>
 	<string>Samuel Lebeau</string>
@@ -194,6 +233,27 @@
 			<key>version</key>
 			<integer>1</integer>
 		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>lastpathcomponent</key>
+				<false/>
+				<key>onlyshowifquerypopulated</key>
+				<true/>
+				<key>removeextension</key>
+				<false/>
+				<key>text</key>
+				<string>{query}</string>
+				<key>title</key>
+				<string>{var:notification_title}</string>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.output.notification</string>
+			<key>uid</key>
+			<string>F284F4B9-F0C0-4962-8CB7-6F5FE6F02126</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
 	</array>
 	<key>readme</key>
 	<string>alfred-psw-workflow lets you search Apple **Passwords.app** entries by using the `psw` keyword and copy a password (main action) or OTP code (alternative action) to *a secure, expiring clipboard*.
@@ -239,6 +299,13 @@ and require authentication before being copied (via main password or Touch ID).<
 			<real>280</real>
 			<key>ypos</key>
 			<real>410</real>
+		</dict>
+		<key>F284F4B9-F0C0-4962-8CB7-6F5FE6F02126</key>
+		<dict>
+			<key>xpos</key>
+			<integer>500</integer>
+			<key>ypos</key>
+			<integer>215</integer>
 		</dict>
 	</dict>
 	<key>userconfigurationconfig</key>

@@ -122,11 +122,11 @@ class SetupCacheTest < Minitest::Test
     assert_equal previous, File.read(@cache)
   end
 
-  # Runs setup_cache.rb with a fake osascript first on PATH; returns the notifications it got as [message, title].
-  # The fake file picker answers `picked`, or cancels when it is nil. Sets @status, @err and @picker_calls.
+  # Runs setup_cache.rb with a fake osascript (the file picker) first on PATH; returns the notifications printed
+  # for Alfred's Post Notification as [message, title]. The fake picker answers `picked`, or cancels when it is nil.
+  # Sets @status, @err and @picker_calls.
   def notifications_from(*args, alfred: true, picked: nil)
     bin = File.join(@home, 'bin')
-    log = File.join(@home, 'notifications')
     picker_log = File.join(@home, 'picker_calls')
     FileUtils.mkdir_p(bin)
     File.write(File.join(bin, 'osascript'), <<~SH)
@@ -134,13 +134,15 @@ class SetupCacheTest < Minitest::Test
       case "$*" in
         *"choose file"*) printf '%s\\n' "$*" >> "#{picker_log}"; [ -n "$PICKED" ] || exit 1; echo "$PICKED"; exit 0 ;;
       esac
-      printf '%s\\n' "${@: -2}" >> "#{log}"
+      echo "unexpected osascript call: $*" >&2; exit 1
     SH
     File.chmod(0o755, File.join(bin, 'osascript'))
     env = { 'PATH' => "#{bin}:#{ENV['PATH']}", 'alfred_version' => (alfred ? '5.5' : nil), 'PICKED' => picked }
-    _, @err, @status = run_script('setup_cache.rb', *args, env: env)
+    out, @err, @status = run_script('setup_cache.rb', *args, env: env)
     @picker_calls = File.exist?(picker_log) ? File.readlines(picker_log, chomp: true) : []
-    File.exist?(log) ? File.readlines(log, chomp: true).each_slice(2).to_a : []
+    return out.lines.grep(/alfredworkflow/) unless alfred # Terminal: plain progress output only
+    # Alfred reads the whole stdout as one JSON object, so nothing else may be printed there
+    out.empty? ? [] : [JSON.parse(out)['alfredworkflow'].then { [_1['arg'], _1['variables']['notification_title']] }]
   end
 
   def test_alfred_notifies_success
@@ -192,7 +194,7 @@ class SetupCacheTest < Minitest::Test
     (message, title), = notifications_from(picked: File.join(@home, 'gone.csv'))
     assert_equal 'Error', title
     assert_match(/CSV file not found/, message)
-    assert_equal 1, @status.exitstatus
+    assert @status.success? # exits 0 so that Alfred still shows the notification
   end
 
   def test_terminal_without_argument_does_not_open_picker

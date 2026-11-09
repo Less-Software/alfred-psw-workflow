@@ -12,18 +12,20 @@ require 'securerandom'
 require 'uri'
 require_relative 'cache_key'
 
-# Alfred's File Action shows no output, so report there with a notification; Terminal has stdout/stderr
+# In Alfred, stdout goes to the Post Notification output (which shows the workflow icon), so it must hold
+# only that message: progress lines go to stderr, shown in Alfred's debugger. Terminal keeps both streams.
+NOTIFICATION_OUT = $stdout
+$stdout = $stderr if ENV['alfred_version']
+
 def notify(message, title)
   return unless ENV['alfred_version']
-  # Pass the text as arguments, not inside the AppleScript source, so quotes in paths can't break it
-  system('osascript', '-e', 'on run argv', '-e', 'display notification (item 1 of argv) with title (item 2 of argv)',
-         '-e', 'end run', message, title)
+  NOTIFICATION_OUT.puts JSON.generate(alfredworkflow: { arg: message, variables: { notification_title: title } })
 end
 
 def fail!(message)
   STDERR.puts message
   notify(message, 'Error')
-  exit 1
+  exit(ENV['alfred_version'] ? 0 : 1) # Alfred may not run the notification after a failed script
 end
 
 csv_arg = ARGV[0].to_s

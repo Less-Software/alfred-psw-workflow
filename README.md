@@ -149,8 +149,12 @@ Receives `username|domain`, runs `apw otp get <domain>`, and copies the OTP `cod
 whose username matches to the clipboard.
 
 Both action scripts share `apw_copy.sh`, which splits the argument on its last `|` (a username may contain one),
-runs apw and copies the result. They use `/usr/bin/jq` if present, otherwise `$(brew --prefix jq)/bin/jq`, and show a
-macOS notification if jq is missing or if the lookup fails.
+runs apw and copies the result. They use `/usr/bin/jq` if present, otherwise `$(brew --prefix jq)/bin/jq`.
+
+The action scripts and `setup_cache.rb` report the outcome (copied, or what failed) by printing it for Alfred's
+Post Notification output, so notifications show the workflow icon. Their stdout holds only that message, as
+`{"alfredworkflow": {"arg": "<message>", "variables": {"notification_title": "<title>"}}}`, and they exit 0 even on
+errors so that Alfred still shows it.
 
 ### `copy_secret.sh`: secure copy
 
