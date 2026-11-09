@@ -24,9 +24,10 @@ class CopySecretTest < Minitest::Test
   def setup = @name = "alfred-psw-workflow-test-#{SecureRandom.hex(4)}"
   def teardown = pasteboard('release')
 
-  def pasteboard(*args)
+  # check: false for polling, so the assertion count doesn't depend on how many polls fit in the wait
+  def pasteboard(*args, check: true)
     out, err, st = Open3.capture3('/usr/bin/osascript', '-l', 'JavaScript', '-e', PASTEBOARD_JS, @name, *args)
-    assert st.success?, err
+    assert st.success?, err if check
     args.empty? ? JSON.parse(out) : out
   end
 
@@ -57,14 +58,14 @@ class CopySecretTest < Minitest::Test
   def test_clears_after_delay
     copy('s3cr3t', clear_after: 1)
     assert_equal 's3cr3t', pasteboard['text']
-    wait_until { pasteboard['text'].nil? }
+    wait_until { pasteboard(check: false)['text'].nil? }
     assert_nil pasteboard['text']
   end
 
   def test_keeps_a_later_copy
-    copy('s3cr3t', clear_after: 1)
+    copy('s3cr3t', clear_after: 0.2) # short enough to clear before the check, long enough to follow the later copy
     pasteboard('copied later')
-    sleep 2.5 # past the delay plus osascript's startup
+    sleep 0.5 # past the delay plus osascript's startup (~60ms)
     assert_equal 'copied later', pasteboard['text']
   end
 end
