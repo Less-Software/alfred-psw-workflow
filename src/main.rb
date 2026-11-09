@@ -47,7 +47,7 @@ begin
   cipher.iv = iv
 
   decrypted_json = cipher.update(encrypted_data) + cipher.final
-  
+
   # Parse items from cache
   items_data = JSON.parse(decrypted_json)
 
@@ -72,7 +72,7 @@ sorted_items = filtered_items.sort_by do |item|
   title = item['title'].downcase
   domain = item['domain'].downcase
   username = item['username'].downcase
- 
+
   match_title = title.include?(q) ? 0 : 1
   match_domain = domain.include?(q) ? 0 : 1
   match_username = username.include?(q) ? 0 : 1
@@ -84,7 +84,7 @@ displayed_items = sorted_items.map do |item|
   title = item['title']
   domain = item['domain']
   username = item['username']
- 
+
   # setup_cache.rb stores stripped strings, so empty? is enough
   display_title = [title, domain, username].find { !_1.empty? }
 

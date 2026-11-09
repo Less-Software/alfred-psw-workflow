@@ -17,7 +17,8 @@ class MainTest < Minitest::Test
   def teardown = FileUtils.rm_rf(@home)
 
   def run_script(name, *args)
-    Open3.capture3({ 'HOME' => @home }, RbConfig.ruby, '-x', File.expand_path("../src/#{name}", __dir__), *args)
+    Open3.capture3({ 'HOME' => @home }, RbConfig.ruby, '-x',
+      File.expand_path("../src/#{name}", __dir__), *args)
   end
 
   # Build the cache with the real setup script, so both sides share the format

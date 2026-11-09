@@ -38,22 +38,33 @@ class ActionTest < Minitest::Test
   def teardown = FileUtils.rm_rf(@dir)
 
   def run_action(script, arg, apw_output:, apw_status: 0, env: {})
-    env = { 'PATH' => "#{@dir}/bin:#{ENV['PATH']}", 'FAKE_DIR' => @dir, 'KEEP_CLIPBOARD_DELAY' => '0',
-            'APW_OUTPUT' => apw_output, 'APW_STATUS' => apw_status.to_s, **env }
+    env = {
+      'PATH' => "#{@dir}/bin:#{ENV['PATH']}",
+      'FAKE_DIR' => @dir,
+      'KEEP_CLIPBOARD_DELAY' => '0',
+      'APW_OUTPUT' => apw_output,
+      'APW_STATUS' => apw_status.to_s,
+      **env
+    }
     @out, err, st = Open3.capture3(env, File.expand_path("../src/actions/#{script}", __dir__), arg)
     [st, err]
   end
 
   def read(name) = File.exist?(f = File.join(@dir, name)) ? File.read(f) : nil
   # Alfred reads the whole stdout as one JSON object: returns [message, title]
-  def notification = JSON.parse(@out)['alfredworkflow'].then { [_1['arg'], _1['variables']['notification_title']] }
+  def notification
+    JSON.parse(@out)['alfredworkflow'].then { [_1['arg'], _1['variables']['notification_title']] }
+  end
 
-  def pw_json(**passwords) = JSON.generate(results: passwords.map { |u, p| { username: u.to_s, password: p } })
+  def pw_json(**passwords)
+    JSON.generate(results: passwords.map { |u, p| { username: u.to_s, password: p } })
+  end
 
   def otp_json(**codes) = JSON.generate(results: codes.map { |u, c| { username: u.to_s, code: c } })
 
   def test_password_copied_for_matching_username
-    st, err = run_action('main.sh', 'octo|github.com', apw_output: pw_json(alice: 'other', octo: 's3cr3t'))
+    st, err = run_action('main.sh', 'octo|github.com',
+      apw_output: pw_json(alice: 'other', octo: 's3cr3t'))
     assert st.success?, err
     assert_equal "pw get github.com octo\n", read('apw_args') # domain before username
     assert_equal 's3cr3t', read('clipboard')                  # matching account, no trailing newline
@@ -69,7 +80,8 @@ class ActionTest < Minitest::Test
   end
 
   def test_password_apw_failure
-    st, err = run_action('main.sh', 'octo|github.com', apw_output: pw_json(octo: 's3cr3t'), apw_status: 1)
+    st, err = run_action('main.sh', 'octo|github.com', apw_output: pw_json(octo: 's3cr3t'),
+      apw_status: 1)
     assert st.success?, err # exits 0 so that Alfred still shows the notification
     assert_nil read('clipboard')
     assert_equal ['apw execution failed or canceled', 'Error'], notification
@@ -92,7 +104,7 @@ class ActionTest < Minitest::Test
 
   def test_otp_copied_for_matching_username
     st, err = run_action('alt.sh', 'octo|github.com',
-                         apw_output: otp_json(alice: '111111', octo: '222222'))
+      apw_output: otp_json(alice: '111111', octo: '222222'))
     assert st.success?, err
     assert_equal "otp get github.com\n", read('apw_args')
     assert_equal '222222', read('clipboard')
@@ -107,8 +119,10 @@ class ActionTest < Minitest::Test
   end
 
   def test_copy_failure_is_reported
-    [['main.sh', pw_json(octo: 's3cr3t')], ['alt.sh', otp_json(octo: '222222')]].each do |script, output|
-      st, err = run_action(script, 'octo|github.com', apw_output: output, env: { 'COPY_FAILS' => '1' })
+    [['main.sh', pw_json(octo: 's3cr3t')],
+     ['alt.sh', otp_json(octo: '222222')]].each do |script, output|
+      st, err = run_action(script, 'octo|github.com', apw_output: output,
+        env: { 'COPY_FAILS' => '1' })
       assert st.success?, err
       assert_equal ['Failed to copy to clipboard', 'Error'], notification, script
     end

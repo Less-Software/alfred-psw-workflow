@@ -90,7 +90,7 @@ begin
 rescue CSV::MalformedCSVError => e
   fail! "Error: unable to parse #{csv_path}: #{e.message}"
 ensure
-  # CRITICAL SECURITY STEP: Remove the CSV file immediately after parsing, 
+  # CRITICAL SECURITY STEP: Remove the CSV file immediately after parsing,
   # even if an exception occurs during parsing.
   if File.exist?(csv_path)
     File.delete(csv_path)

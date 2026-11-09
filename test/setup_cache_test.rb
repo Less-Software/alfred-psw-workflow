@@ -138,12 +138,19 @@ class SetupCacheTest < Minitest::Test
       echo "unexpected osascript call: $*" >&2; exit 1
     SH
     File.chmod(0o755, File.join(bin, 'osascript'))
-    env = { 'PATH' => "#{bin}:#{ENV['PATH']}", 'alfred_version' => (alfred ? '5.5' : nil), 'PICKED' => picked }
+    env = {
+      'PATH' => "#{bin}:#{ENV['PATH']}", 'alfred_version' => (alfred ? '5.5' : nil),
+      'PICKED' => picked
+    }
     out, @err, @status = run_script('setup_cache.rb', *args, env: env)
     @picker_calls = File.exist?(picker_log) ? File.readlines(picker_log, chomp: true) : []
     return out.lines.grep(/alfredworkflow/) unless alfred # Terminal: plain progress output only
     # Alfred reads the whole stdout as one JSON object, so nothing else may be printed there
-    out.empty? ? [] : [JSON.parse(out)['alfredworkflow'].then { [_1['arg'], _1['variables']['notification_title']] }]
+    if out.empty?
+      []
+    else
+      [ JSON.parse(out)['alfredworkflow'].then { [_1['arg'], _1['variables']['notification_title']] } ]
+    end
   end
 
   def test_alfred_notifies_success

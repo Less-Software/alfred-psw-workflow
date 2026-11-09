@@ -26,13 +26,15 @@ class SecretPbcopyTest < Minitest::Test
 
   # check: false for polling, so the assertion count doesn't depend on how many polls fit in the wait
   def pasteboard(*args, check: true)
-    out, err, st = Open3.capture3('/usr/bin/osascript', '-l', 'JavaScript', '-e', PASTEBOARD_JS, @name, *args)
+    out, err, st = Open3.capture3('/usr/bin/osascript', '-l', 'JavaScript', '-e', PASTEBOARD_JS,
+      @name, *args)
     assert st.success?, err if check
     args.empty? ? JSON.parse(out) : out
   end
 
   def copy(secret, clear_after: 30)
-    _, err, st = Open3.capture3({
+    _, err, st = Open3.capture3(
+      {
         'PASTEBOARD_NAME' => @name,
         'KEEP_CLIPBOARD_DELAY' => clear_after.to_s
       },
@@ -70,7 +72,14 @@ class SecretPbcopyTest < Minitest::Test
   end
 
   def test_rejects_a_delay_that_is_not_seconds
-    _, err, st = Open3.capture3({ 'PASTEBOARD_NAME' => @name, 'KEEP_CLIPBOARD_DELAY' => '30s' }, SCRIPT, stdin_data: 's3cr3t')
+    _, err, st = Open3.capture3(
+      {
+        'PASTEBOARD_NAME' => @name,
+        'KEEP_CLIPBOARD_DELAY' => '30s'
+      },
+      SCRIPT,
+      stdin_data: 's3cr3t'
+    )
     refute st.success?
     assert_match(/KEEP_CLIPBOARD_DELAY must be a number of seconds/, err)
     assert_nil pasteboard['text'] # never copied, so it can't stay on the clipboard

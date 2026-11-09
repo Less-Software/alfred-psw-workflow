@@ -1,4 +1,5 @@
 # encoding: utf-8
+
 # Shared by setup_cache.rb and main.rb: both must derive the same key to read the cache
 
 require 'openssl'
@@ -13,8 +14,17 @@ CIPHER_SALT = ENV.fetch('cipher_salt', PROJECT_NAME)
 def cache_key
   seed = File.read(SEED_PATH).strip
   raise "seed file #{SEED_PATH} is empty" if seed.empty?
+
   # Bind the key to this Mac: a copied seed + cache is useless elsewhere
-  hw_uuid = `/usr/sbin/ioreg -rd1 -c IOPlatformExpertDevice`[/"IOPlatformUUID" = "([^"]+)"/, 1]
+  ioreg = `/usr/sbin/ioreg -rd1 -c IOPlatformExpertDevice`
+  hw_uuid = ioreg[/"IOPlatformUUID" = "([^"]+)"/, 1]
   raise 'cannot read hardware UUID' unless hw_uuid
-  OpenSSL::PKCS5.pbkdf2_hmac(seed, "#{CIPHER_SALT}|#{hw_uuid}", 10000, 32, OpenSSL::Digest.new('SHA1'))
+
+  OpenSSL::PKCS5.pbkdf2_hmac(
+    seed,                         # password
+    "#{CIPHER_SALT}|#{hw_uuid}",  # salt
+    10000,                        # iterations
+    32,                           # key size
+    OpenSSL::Digest.new('SHA1')   # digest
+  )
 end
