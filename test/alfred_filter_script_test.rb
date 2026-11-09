@@ -6,6 +6,7 @@ require 'json'
 require 'fileutils'
 
 class AlfredFilterScriptTest < Minitest::Test
+  parallelize_me! # each test uses its own temp dir or pasteboard, so they can share the process
   def setup
     @home = Dir.mktmpdir # scripts write under ~, so a fake HOME protects the real seed/cache
     @seed = File.join(@home, '.config/alfred-psw-workflow/seed')

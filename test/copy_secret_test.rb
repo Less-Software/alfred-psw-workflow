@@ -5,6 +5,7 @@ require 'json'
 require 'securerandom'
 
 class CopySecretTest < Minitest::Test
+  parallelize_me! # each test uses its own temp dir or pasteboard, so they can share the process
   SCRIPT = File.expand_path('../copy_secret.sh', __dir__)
 
   # Reads or writes the private pasteboard named argv[0]; with argv[1], replaces its text like another app would

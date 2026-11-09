@@ -8,6 +8,7 @@ require 'fileutils'
 ROOT = File.expand_path('..', __dir__)
 
 class SetupCacheTest < Minitest::Test
+  parallelize_me! # each test uses its own temp dir or pasteboard, so they can share the process
   def setup
     @home = Dir.mktmpdir # scripts write under ~, so a fake HOME protects the real seed/cache
     @csv = File.join(@home, 'pw.csv')

@@ -6,6 +6,7 @@ require 'json'
 require 'fileutils'
 
 class ActionTest < Minitest::Test
+  parallelize_me! # each test uses its own temp dir or pasteboard, so they can share the process
   # Fakes prepended to PATH: brew points `--prefix apw` at a fake apw, osascript records notifications.
   # osascript also stands in for copy_secret.sh's JavaScript: the copy writes stdin to a file (fails if COPY_FAILS
   # is set) and the delayed clear does nothing. copy_secret_test.rb covers the real JavaScript.
