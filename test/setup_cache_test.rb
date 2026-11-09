@@ -103,6 +103,14 @@ class SetupCacheTest < Minitest::Test
     refute File.exist?(@cache)
   end
 
+  def test_unparsable_url_keeps_raw_host
+    File.write(@csv, "Title,URL,Username,Password\nBooks,https://bücher.de/a b,reader,pw\n") # URI rejects both
+    _, err, st = run_script('setup_cache.rb', @csv)
+    assert st.success?, err
+    out, = run_script('alfred_filter_script.rb', 'books')
+    assert_equal 'reader|bücher.de', JSON.parse(out)['items'].first['arg']
+  end
+
   # Runs setup_cache.rb with a fake osascript first on PATH; returns the notifications it got as [message, title].
   # The fake file picker answers `picked`, or cancels when it is nil. Sets @status, @err and @picker_calls.
   def notifications_from(*args, alfred: true, picked: nil)
@@ -130,7 +138,7 @@ class SetupCacheTest < Minitest::Test
   end
 
   def test_alfred_notifies_failure
-    File.write(@csv, "Title,URL,Password\nBooks,https://bücher.de/,pw\n") # URI rejects non-ASCII hosts
+    File.write(@csv, "Title,URL,Username,Password\n\"unclosed,x\n")
     (message, title), = notifications_from(@csv)
     assert_equal 'Error', title
     assert_match(/unable to parse/, message)

@@ -68,10 +68,12 @@ begin
   # CSV headers: Title,domain,Username,Password,Notes,OTPAuth
   CSV.foreach(csv_path, headers: true, encoding: 'utf-8') do |row|
     title = row['Title']
-    if row['URL'] && !row['URL'].empty?
-      url = URI.parse(row['URL'])
-      domain = url.host
-      domain = "#{domain}:#{url.port}" unless url.port == url.default_port
+    url = row['URL'].to_s
+    domain = begin
+      uri = URI.parse(url)
+      uri.port == uri.default_port ? uri.host : "#{uri.host}:#{uri.port}"
+    rescue URI::InvalidURIError
+      url[%r{//([^/?#]+)}, 1] # URI rejects non-ASCII hosts and spaces: keep the raw host instead of failing the sync
     end
     username = row['Username']
 
@@ -88,7 +90,7 @@ begin
       'username' => username.to_s.strip
     }
   end
-rescue CSV::MalformedCSVError, URI::InvalidURIError => e
+rescue CSV::MalformedCSVError => e
   fail! "Error: unable to parse #{csv_path}: #{e.message}"
 ensure
   # CRITICAL SECURITY STEP: Remove the CSV file immediately after parsing, 
