@@ -44,7 +44,7 @@ them with Homebrew's ruby, because a shebang line can't call `brew`.
 
 ## Files
 
-### `setup-cache.rb`: cache sync (run manually in Terminal)
+### `setup_cache.rb`: cache sync (run manually in Terminal)
 
 Builds the encrypted search cache from a Passwords CSV export. Alfred never runs it.
 Run it once to set up, then again whenever your passwords change:
@@ -54,7 +54,7 @@ Run it once to set up, then again whenever your passwords change:
 2. Run:
 
    ```sh
-   ./setup-cache.rb ~/path/to/Passwords.csv
+   ./setup_cache.rb ~/path/to/Passwords.csv
    ```
 
 The script:
@@ -69,15 +69,15 @@ run the sync again.
 
 #### Security
 
-The CSV export contains every password in clear text. Even though `setup-cache.rb` deletes it, a file
+The CSV export contains every password in clear text. Even though `setup_cache.rb` deletes it, a file
 written to your disk can be indexed by Spotlight or copied by Time Machine before then, and deleted
 data can stay recoverable on the drive.
 
 Export it to a RAM disk instead, so it never touches the disk. [RAM Folder](https://less-software.sh/ram-folder)
 is a modern, reliable way to do this: create a RAM Folder with **Sync RAM Folder** turned off, save the
-export there, and pass that path to `setup-cache.rb`.
+export there, and pass that path to `setup_cache.rb`.
 
-### `alfred-filter-script.rb`: Alfred Script Filter
+### `alfred_filter_script.rb`: Alfred Script Filter
 
 Runs on every keystroke with the query as `$1`. Once the query has at least 4 characters, it decrypts
 the cache, keeps the entries whose title, domain or username contains the query, and returns them to Alfred
@@ -88,7 +88,7 @@ as Script Filter JSON. Each result's `arg` is `username|domain`.
 Receives `username|domain`, runs `apw pw get <domain> <username>`, and copies the first result's password
 to the clipboard.
 
-### `alternative-action.sh`: Alfred alternative action (modifier key)
+### `alternative_action.sh`: Alfred alternative action (modifier key)
 
 Receives `username|domain`, runs `apw otp get <domain>`, and copies the OTP `code` of the first result
 whose username matches to the clipboard.
