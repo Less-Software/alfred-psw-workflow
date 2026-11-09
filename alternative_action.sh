@@ -29,9 +29,10 @@ fi
 OTP=$(echo "$APW_JSON_OUTPUT" | "$JQ" -r --arg u "$USERNAME" \
   'first(.results[]? | select(.username == $u) | .code) // empty')
 
-if [ -n "$OTP" ]; then
-  echo -n "$OTP" | pbcopy
+if [ -z "$OTP" ]; then
+  osascript -e 'display notification "No OTP found for this username" with title "Error"'
+elif printf '%s' "$OTP" | "$(dirname "$0")/copy_secret.sh"; then
   osascript -e 'display notification "OTP copied to clipboard!" with title "Apple Passwords"'
 else
-  osascript -e 'display notification "No OTP found for this username" with title "Error"'
+  osascript -e 'display notification "Failed to copy to clipboard" with title "Error"'
 fi

@@ -24,6 +24,7 @@ On the selected entry:
 - **⌥↩ (Option-Enter)** copies the current OTP code to the clipboard.
 
 Touch ID is then required to unlock the entry. A notification confirms the copy.
+The clipboard is cleared 30 seconds later, unless you copied something else meanwhile (see [Security](#security)).
 
 ## Setup
 
@@ -63,6 +64,7 @@ The cache is now ready and Passwords.csv has been deleted: you can start using `
 | `Failed to parse password from JSON` | apw found no password for this entry, for example because it was deleted since the last sync: run `pwsync`. |
 | `No OTP found for this username` | The entry has no verification code in Passwords. |
 | `jq not found: brew install jq` | Install jq (macOS < 15 only). |
+| `Failed to copy to clipboard` | macOS refused the clipboard write: try again, and check the Alfred debugger for the error. |
 | `Seed or Cache missing. Please run sync.` | Run `pwsync`. |
 | `Decryption or Parsing Error` | The cache was made on another Mac or with another seed, or is damaged: run `pwsync`. The subtitle shows the cause. |
 | `Error: unable to parse …` (after `pwsync`) | The CSV isn't a valid Passwords export: export it again. |
@@ -83,6 +85,15 @@ file picker.
 
 If you export to a regular folder instead, exclude it from Time Machine backups and from Spotlight indexing
 in System Settings.
+
+### How copied passwords are protected
+
+Passwords and OTP codes are copied with the [nspasteboard.org](http://nspasteboard.org) concealed and transient
+markers, which tell clipboard managers that respect them not to record the copy. They also stay off
+Universal Clipboard, so they aren't sent to your other Apple devices.
+
+The clipboard is cleared 30 seconds after the copy, unless something else was copied meanwhile. To change the
+delay, set the `CLEAR_CLIPBOARD_AFTER` workflow variable (in seconds) in Alfred's workflow configuration.
 
 ### How `pwsync` keeps my data safe
 
@@ -121,6 +132,12 @@ whose username matches to the clipboard.
 
 Both action scripts use `/usr/bin/jq` if present, otherwise `$(brew --prefix jq)/bin/jq`, and show a
 macOS notification if jq is missing or if the lookup fails.
+
+### `copy_secret.sh`: secure copy
+
+Called by both actions with the secret on stdin. It copies it with JavaScript for Automation (`osascript -l JavaScript`),
+marked as concealed and transient and limited to this Mac, then starts a detached job that clears the clipboard
+after `CLEAR_CLIPBOARD_AFTER` seconds if the clipboard hasn't changed since.
 
 ## Contribute
 

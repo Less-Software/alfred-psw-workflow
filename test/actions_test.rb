@@ -7,10 +7,18 @@ require 'json'
 require 'fileutils'
 
 class ActionTest < Minitest::Test
-  # Fakes prepended to PATH: osascript and pbcopy record what they get, brew points `--prefix apw` at a fake apw
+  # Fakes prepended to PATH: brew points `--prefix apw` at a fake apw, osascript records notifications.
+  # osascript also stands in for copy_secret.sh's JavaScript: the copy writes stdin to a file (fails if COPY_FAILS
+  # is set) and the delayed clear does nothing. copy_secret_test.rb covers the real JavaScript.
   FAKES = {
-    'osascript' => %(printf '%s\\n' "$2" >> "$FAKE_DIR/notifications"),
-    'pbcopy' => %(cat > "$FAKE_DIR/clipboard"),
+    'osascript' => <<~'SH',
+      if [ "$1" = -l ]; then
+        case "$*" in *clearContents*) exit 0 ;; esac
+        [ -z "$COPY_FAILS" ] || exit 1
+        cat > "$FAKE_DIR/clipboard"; echo 1; exit 0
+      fi
+      printf '%s\n' "$2" >> "$FAKE_DIR/notifications"
+    SH
     'brew' => %(echo "$FAKE_DIR"),
     'apw' => %(printf '%s\\n' "$*" > "$FAKE_DIR/apw_args"; printf '%s' "$APW_OUTPUT"; exit "${APW_STATUS:-0}")
   }.freeze
@@ -27,9 +35,9 @@ class ActionTest < Minitest::Test
 
   def teardown = FileUtils.rm_rf(@dir)
 
-  def run_action(script, arg, apw_output:, apw_status: 0)
-    env = { 'PATH' => "#{@dir}/bin:#{ENV['PATH']}", 'FAKE_DIR' => @dir,
-            'APW_OUTPUT' => apw_output, 'APW_STATUS' => apw_status.to_s }
+  def run_action(script, arg, apw_output:, apw_status: 0, env: {})
+    env = { 'PATH' => "#{@dir}/bin:#{ENV['PATH']}", 'FAKE_DIR' => @dir, 'CLEAR_CLIPBOARD_AFTER' => '0',
+            'APW_OUTPUT' => apw_output, 'APW_STATUS' => apw_status.to_s, **env }
     _, err, st = Open3.capture3(env, File.expand_path("../#{script}", __dir__), arg)
     [st, err]
   end
@@ -83,6 +91,14 @@ class ActionTest < Minitest::Test
     refute st.success?
     assert_nil read('clipboard')
     assert_match(/apw execution failed or canceled/, notification)
+  end
+
+  def test_copy_failure_is_reported
+    [['action.sh', pw_json('s3cr3t')], ['alternative_action.sh', otp_json(octo: '222222')]].each do |script, output|
+      st, err = run_action(script, 'octo|github.com', apw_output: output, env: { 'COPY_FAILS' => '1' })
+      assert st.success?, err
+      assert_match(/Failed to copy to clipboard/, notification, script)
+    end
   end
 
   def test_otp_no_matching_username

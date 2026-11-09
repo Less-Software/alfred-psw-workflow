@@ -29,9 +29,10 @@ fi
 # Parse the JSON response using jq to extract the first result's password
 PASSWORD=$(echo "$APW_JSON_OUTPUT" | "$JQ" -r '.results[0].password // empty' | tr -d '\n')
 
-if [ $? -eq 0 ] && [ -n "$PASSWORD" ] && [ "$PASSWORD" != "null" ]; then
-  echo -n "$PASSWORD" | pbcopy
+if [ $? -ne 0 ] || [ -z "$PASSWORD" ] || [ "$PASSWORD" = "null" ]; then
+  osascript -e 'display notification "Failed to parse password from JSON" with title "Error"'
+elif printf '%s' "$PASSWORD" | "$(dirname "$0")/copy_secret.sh"; then
   osascript -e 'display notification "Password copied to clipboard!" with title "Apple Passwords"'
 else
-  osascript -e 'display notification "Failed to parse password from JSON" with title "Error"'
+  osascript -e 'display notification "Failed to copy to clipboard" with title "Error"'
 fi
