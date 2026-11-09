@@ -14,6 +14,17 @@ SALT = 'alfred-pw-workflow'
 
 query = ARGV[0].to_s.strip
 
+# Some abstractions to enhance readability
+class String
+  def blank?
+    strip.empty?
+  end
+
+  def present?
+    !blank?
+  end
+end
+
 # Rule: Wait for at least 4 characters before searching
 if query.length < 4
   response = {
@@ -57,7 +68,10 @@ begin
   cipher.iv = iv
 
   decrypted_json = cipher.update(encrypted_data) + cipher.final
+  
+  # Parse items from cache
   items_data = JSON.parse(decrypted_json)
+
 rescue => e
   response = {
     items: [{ title: "Decryption or Parsing Error", subtitle: e.message, valid: false }]
@@ -76,10 +90,10 @@ filtered_items = items_data.select do |item|
 end
 
 sorted_items = filtered_items.sort_by do |item|
+  title = item['title'].to_s.downcase
   domain = item['domain'].to_s.downcase
   username = item['username'].to_s.downcase
-  title = item['title'].to_s.downcase.strip
-
+ 
   match_title = title.include?(q) ? 0 : 1
   match_domain = domain.include?(q) ? 0 : 1
   match_username = username.include?(q) ? 0 : 1
@@ -87,16 +101,19 @@ sorted_items = filtered_items.sort_by do |item|
   [match_title, match_domain, match_username, domain, username]
 end
 
-alfred_items = sorted_items.map do |item|
-  username = item['username']
-  domain = item['domain']
+displayed_items = sorted_items.map do |item|
   title = item['title']
+  domain = item['domain']
+  username = item['username']
+ 
+  display_title = [title, domain, username].find(&:present?)
+  
+  subtitle = [
+    ("user: #{username}" if username.present?),
+    ("domain: #{domain}" if domain.present?)
+  ].compact.join(' | ')
 
-  # Cleanup here
-  display_title = "#{title}: #{username}@#{domain}"
-  subtitle = "Title: #{title} | User: #{username} | Domain: #{domain}"
-
-  # Pass 'username::domain' directly into arg so we don't need to parse the cache again
+  # Pass 'username|domain' directly into arg so we don't need to parse the cache again
   pass_arg = "#{username}|#{domain}"
 
   {
@@ -110,12 +127,12 @@ alfred_items = sorted_items.map do |item|
   }
 end
 
-if alfred_items.empty?
-  alfred_items = [{
+if displayed_items.empty?
+  displayed_items = [{
     title: "No credentials found for '#{query}'",
     valid: false
   }]
 end
 
-response = { items: alfred_items }
+response = { items: displayed_items }
 puts JSON.generate(response)
