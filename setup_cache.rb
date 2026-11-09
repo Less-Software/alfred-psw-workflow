@@ -19,17 +19,35 @@ CIPHER = 'AES-256-CBC'
 DIGEST = OpenSSL::Digest.new('SHA1')
 SALT = PROJECT_NAME
 
-if ARGV[0].to_s.empty?
-  STDERR.puts "Usage: #{File.basename($0)} <Passwords.csv>"
+# Alfred's File Action shows no output, so report there with a notification; Terminal has stdout/stderr
+def notify(message, title)
+  return unless ENV['alfred_version']
+  # Pass the text as arguments, not inside the AppleScript source, so quotes in paths can't break it
+  system('osascript', '-e', 'on run argv', '-e', 'display notification (item 1 of argv) with title (item 2 of argv)',
+         '-e', 'end run', message, title)
+end
+
+def fail!(message)
+  STDERR.puts message
+  notify(message, 'Error')
   exit 1
 end
 
-csv_path = File.expand_path(ARGV[0])
+csv_arg = ARGV[0].to_s
 
-unless File.exist?(csv_path)
-  STDERR.puts "Error: Passwords CSV file not found at #{csv_path}"
-  exit 1
+# The pwsync keyword passes no file: ask for one with a file picker
+if csv_arg.empty? && ENV['alfred_version']
+  # activate brings osascript's dialog in front of other windows
+  csv_arg = IO.popen(['osascript', '-e', 'activate', '-e', 'POSIX path of (choose file with prompt ' \
+                      '"Select your Passwords CSV export" of type {"public.comma-separated-values-text"})'], &:read).strip
+  exit 0 unless $?.success? # picker canceled
 end
+
+fail! "Usage: #{File.basename($0)} <Passwords.csv>" if csv_arg.empty?
+
+csv_path = File.expand_path(csv_arg)
+
+fail! "Error: Passwords CSV file not found at #{csv_path}" unless File.exist?(csv_path)
 
 # 1. Derive encryption key from seed (generated on first run)
 begin
@@ -45,8 +63,7 @@ begin
   raise 'cannot read hardware UUID' unless hw_uuid
   key = OpenSSL::PKCS5.pbkdf2_hmac(seed, "#{SALT}|#{hw_uuid}", 10000, 32, DIGEST)
 rescue => e
-  STDERR.puts "Error reading seed: #{e.message}"
-  exit 1
+  fail! "Error reading seed: #{e.message}"
 end
 
 # 2. Parse the CSV file efficiently
@@ -75,9 +92,8 @@ begin
       'username' => username.to_s.strip
     }
   end
-rescue CSV::MalformedCSVError => e
-  STDERR.puts "Error: unable to parse #{csv_path}: #{e.message}"
-  exit 1
+rescue CSV::MalformedCSVError, URI::InvalidURIError => e
+  fail! "Error: unable to parse #{csv_path}: #{e.message}"
 ensure
   # CRITICAL SECURITY STEP: Remove the CSV file immediately after parsing, 
   # even if an exception occurs during parsing.
@@ -110,3 +126,4 @@ File.write(CACHE_PATH, JSON.generate(store_payload))
 File.chmod(0600, CACHE_PATH)
 
 puts "Cache updated and securely encrypted successfully at #{CACHE_PATH} (#{cache_items.size} items processed)."
+notify("Cache updated: #{cache_items.size} items", 'Apple Passwords')

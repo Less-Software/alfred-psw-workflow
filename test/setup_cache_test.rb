@@ -94,4 +94,89 @@ class SetupCacheTest < Minitest::Test
     refute File.exist?(@csv)   # still deleted on failure
     refute File.exist?(@cache)
   end
+
+  # Runs setup_cache.rb with a fake osascript first on PATH; returns the notifications it got as [message, title].
+  # The fake file picker answers `picked`, or cancels when it is nil. Sets @status, @err and @picker_calls.
+  def notifications_from(*args, alfred: true, picked: nil)
+    bin = File.join(@home, 'bin')
+    log = File.join(@home, 'notifications')
+    picker_log = File.join(@home, 'picker_calls')
+    FileUtils.mkdir_p(bin)
+    File.write(File.join(bin, 'osascript'), <<~SH)
+      #!/bin/bash
+      case "$*" in
+        *"choose file"*) printf '%s\\n' "$*" >> "#{picker_log}"; [ -n "$PICKED" ] || exit 1; echo "$PICKED"; exit 0 ;;
+      esac
+      printf '%s\\n' "${@: -2}" >> "#{log}"
+    SH
+    File.chmod(0o755, File.join(bin, 'osascript'))
+    env = { 'PATH' => "#{bin}:#{ENV['PATH']}", 'alfred_version' => (alfred ? '5.5' : nil), 'PICKED' => picked }
+    _, @err, @status = run_script('setup_cache.rb', *args, env: env)
+    @picker_calls = File.exist?(picker_log) ? File.readlines(picker_log, chomp: true) : []
+    File.exist?(log) ? File.readlines(log, chomp: true).each_slice(2).to_a : []
+  end
+
+  def test_alfred_notifies_success
+    write_csv
+    assert_equal [['Cache updated: 2 items', 'Apple Passwords']], notifications_from(@csv)
+  end
+
+  def test_alfred_notifies_failure
+    File.write(@csv, "Title,URL\nBooks,https://bücher.de/\n") # URI rejects non-ASCII hosts
+    (message, title), = notifications_from(@csv)
+    assert_equal 'Error', title
+    assert_match(/unable to parse/, message)
+    refute File.exist?(@csv) # still deleted on failure
+  end
+
+  def test_alfred_without_file_uses_picker
+    write_csv
+    assert_equal [['Cache updated: 2 items', 'Apple Passwords']], notifications_from('', picked: @csv) # keyword passes ''
+    refute File.exist?(@csv)
+  end
+
+  def test_alfred_without_argument_uses_picker
+    dir = File.join(@home, 'RAM Disk é') # picked paths can hold spaces and non-ASCII characters
+    FileUtils.mkdir(dir)
+    @csv = File.join(dir, 'Passwords.csv')
+    write_csv
+    assert_equal [['Cache updated: 2 items', 'Apple Passwords']], notifications_from(picked: @csv)
+    assert @status.success?, @err
+    assert File.exist?(@cache)
+    refute File.exist?(@csv)
+  end
+
+  def test_alfred_picker_asks_for_a_csv
+    notifications_from
+    assert_equal 1, @picker_calls.size
+    assert_includes @picker_calls[0], 'Select your Passwords CSV export'
+    assert_includes @picker_calls[0], 'public.comma-separated-values-text'
+  end
+
+  def test_alfred_picker_canceled
+    assert_empty notifications_from # no error notification either
+    assert @status.success?
+    assert_empty @err
+    refute File.exist?(@cache)
+    refute File.exist?(@seed) # canceled before anything is created
+  end
+
+  def test_alfred_picked_file_missing
+    (message, title), = notifications_from(picked: File.join(@home, 'gone.csv'))
+    assert_equal 'Error', title
+    assert_match(/CSV file not found/, message)
+    assert_equal 1, @status.exitstatus
+  end
+
+  def test_terminal_without_argument_does_not_open_picker
+    notifications_from(alfred: false)
+    assert_empty @picker_calls
+    assert_equal 1, @status.exitstatus
+    assert_match(/Usage/, @err)
+  end
+
+  def test_terminal_does_not_notify
+    write_csv
+    assert_empty notifications_from(@csv, alfred: false)
+  end
 end

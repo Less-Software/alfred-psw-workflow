@@ -46,7 +46,8 @@ end
 
 unless File.exist?(SEED_PATH) && File.exist?(CACHE_PATH)
   response = {
-    items: [{ title: "Seed or Cache missing. Please run sync.", valid: false }]
+    items: [{ title: "Seed or Cache missing. Please run sync.",
+              subtitle: "Type pwsync in Alfred and select your Passwords CSV export", valid: false }]
   }
   puts JSON.generate(response)
   exit 0

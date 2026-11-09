@@ -49,6 +49,7 @@ class AlfredFilterScriptTest < Minitest::Test
   def test_missing_cache
     items = search('github')
     assert_equal 'Seed or Cache missing. Please run sync.', items[0]['title']
+    assert_match(/pwsync/, items[0]['subtitle'])
   end
 
   def test_corrupt_cache
