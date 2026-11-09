@@ -24,11 +24,12 @@ if [ $EXIT_CODE -ne 0 ] || [ -z "$APW_JSON_OUTPUT" ]; then
   exit 1
 fi
 
-# Parse the JSON response using jq to extract the first result's password
-PASSWORD=$(echo "$APW_JSON_OUTPUT" | "$JQ" -r '.results[0].password // empty' | tr -d '\n')
+# First entry whose username matches: apw can return several accounts for a domain
+PASSWORD=$(echo "$APW_JSON_OUTPUT" | "$JQ" -r --arg u "$USERNAME" \
+  'first(.results[]? | select(.username == $u) | .password) // empty')
 
-if [ $? -ne 0 ] || [ -z "$PASSWORD" ] || [ "$PASSWORD" = "null" ]; then
-  osascript -e 'display notification "Failed to parse password from JSON" with title "Error"'
+if [ -z "$PASSWORD" ]; then
+  osascript -e 'display notification "No Password found for this username" with title "Error"'
 elif printf '%s' "$PASSWORD" | "$(dirname "$0")/copy_secret.sh"; then
   osascript -e 'display notification "Password copied to clipboard!" with title "Apple Passwords"'
 else

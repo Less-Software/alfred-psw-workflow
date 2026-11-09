@@ -44,28 +44,28 @@ class ActionTest < Minitest::Test
   def read(name) = File.exist?(f = File.join(@dir, name)) ? File.read(f) : nil
   def notification = read('notifications')&.lines&.last.to_s
 
-  def pw_json(*passwords) = JSON.generate(results: passwords.map { { password: _1 } })
+  def pw_json(**passwords) = JSON.generate(results: passwords.map { |u, p| { username: u.to_s, password: p } })
 
   def otp_json(**codes) = JSON.generate(results: codes.map { |u, c| { username: u.to_s, code: c } })
 
-  def test_password_copied
-    st, err = run_action('action.sh', 'octo|github.com', apw_output: pw_json('s3cr3t', 'other'))
+  def test_password_copied_for_matching_username
+    st, err = run_action('action.sh', 'octo|github.com', apw_output: pw_json(alice: 'other', octo: 's3cr3t'))
     assert st.success?, err
     assert_equal "pw get github.com octo\n", read('apw_args') # domain before username
-    assert_equal 's3cr3t', read('clipboard')                  # first result, no trailing newline
+    assert_equal 's3cr3t', read('clipboard')                  # matching account, no trailing newline
     assert_match(/Password copied to clipboard!/, notification)
   end
 
   def test_username_with_quote_and_pipe
     user = %q(o'brien|"x")
-    st, err = run_action('action.sh', "#{user}|github.com", apw_output: pw_json('s3cr3t'))
+    st, err = run_action('action.sh', "#{user}|github.com", apw_output: pw_json(user => 's3cr3t'))
     assert st.success?, err
     assert_equal "pw get github.com #{user}\n", read('apw_args')
     assert_equal 's3cr3t', read('clipboard')
   end
 
   def test_password_apw_failure
-    st, = run_action('action.sh', 'octo|github.com', apw_output: pw_json('s3cr3t'), apw_status: 1)
+    st, = run_action('action.sh', 'octo|github.com', apw_output: pw_json(octo: 's3cr3t'), apw_status: 1)
     refute st.success?
     assert_nil read('clipboard')
     assert_match(/apw execution failed or canceled/, notification)
@@ -78,10 +78,12 @@ class ActionTest < Minitest::Test
   end
 
   def test_password_missing_in_json
-    st, err = run_action('action.sh', 'octo|github.com', apw_output: JSON.generate(results: []))
-    assert st.success?, err
-    assert_nil read('clipboard')
-    assert_match(/Failed to parse password from JSON/, notification)
+    [JSON.generate(results: []), pw_json(alice: 'other')].each do |output|
+      st, err = run_action('action.sh', 'octo|github.com', apw_output: output)
+      assert st.success?, err
+      assert_nil read('clipboard')
+      assert_match(/No Password found for this username/, notification)
+    end
   end
 
   def test_otp_copied_for_matching_username
@@ -101,7 +103,7 @@ class ActionTest < Minitest::Test
   end
 
   def test_copy_failure_is_reported
-    [['action.sh', pw_json('s3cr3t')], ['alternative_action.sh', otp_json(octo: '222222')]].each do |script, output|
+    [['action.sh', pw_json(octo: 's3cr3t')], ['alternative_action.sh', otp_json(octo: '222222')]].each do |script, output|
       st, err = run_action(script, 'octo|github.com', apw_output: output, env: { 'COPY_FAILS' => '1' })
       assert st.success?, err
       assert_match(/Failed to copy to clipboard/, notification, script)

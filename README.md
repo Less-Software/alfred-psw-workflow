@@ -74,7 +74,7 @@ The cache is now ready and Passwords.csv has been deleted: you can start using `
 | Message | Fix |
 |---|---|
 | `apw execution failed or canceled` | Touch ID was canceled, or the apw daemon isn't running or paired: start it and run `apw auth` again (needed after every reboot). |
-| `Failed to parse password from JSON` | apw found no password for this entry, for example because it was deleted since the last sync: run `pswsync`. |
+| `No Password found for this username` | apw found no password for this account, for example because it was deleted or renamed since the last sync: run `pswsync`. |
 | `No OTP found for this username` | The entry has no verification code in Passwords. |
 | `jq not found: brew install jq` | Install jq (macOS < 15 only). |
 | `Failed to copy to clipboard` | macOS refused the clipboard write: try again, and check the Alfred debugger for the error. |
@@ -140,8 +140,8 @@ Both Ruby scripts derive the cache key with `cache_key.rb`.
 
 ### `action.sh`: Alfred action (↩)
 
-Receives `username|domain`, runs `apw pw get <domain> <username>`, and copies the first result's password
-to the clipboard.
+Receives `username|domain`, runs `apw pw get <domain> <username>`, and copies the password of the first result
+whose username matches to the clipboard.
 
 ### `alternative_action.sh`: Alfred alternative action (⌥↩)
 
