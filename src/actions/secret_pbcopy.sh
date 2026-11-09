@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copies stdin to the clipboard marked as secret, then clears it after $CLEAR_CLIPBOARD_AFTER seconds (default 30)
+# Copies stdin to the clipboard marked as secret, then clears it after $KEEP_CLIPBOARD_DELAY seconds (default 30)
 # unless something else was copied meanwhile. PASTEBOARD_NAME (tests only) uses a private pasteboard instead.
 
 # Marks the copy as concealed and transient (nspasteboard.org) so clipboard managers don't record it,
@@ -30,7 +30,11 @@ function run(argv) {
 JS
 )
 
+DELAY=${KEEP_CLIPBOARD_DELAY:-30}
+# Checked before copying: if sleep rejected it, the secret would never be cleared
+[[ $DELAY =~ ^[0-9]+(\.[0-9]+)?$ ]] || { echo "KEEP_CLIPBOARD_DELAY must be a number of seconds: $DELAY" >&2; exit 1; }
+
 COUNT=$(osascript -l JavaScript -e "$COPY_JS") || exit 1
 
 # Detached, with every stream closed, so Alfred doesn't wait for it; it holds the change count, never the secret
-(sleep "${CLEAR_CLIPBOARD_AFTER:-30}"; osascript -l JavaScript -e "$CLEAR_JS" "$COUNT") </dev/null >/dev/null 2>&1 &
+(sleep "$DELAY"; osascript -l JavaScript -e "$CLEAR_JS" "$COUNT") </dev/null >/dev/null 2>&1 &

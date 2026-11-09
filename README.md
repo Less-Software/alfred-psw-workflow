@@ -116,7 +116,8 @@ markers, which tell clipboard managers that respect them not to record the copy.
 Universal Clipboard, so they aren't sent to your other Apple devices.
 
 The clipboard is cleared 30 seconds after the copy, unless something else was copied meanwhile. To change the
-delay, set the `CLEAR_CLIPBOARD_AFTER` workflow variable (in seconds) in Alfred's workflow configuration.
+delay, set "Keep Clipboard Delay" (in seconds, decimals allowed) in the Workflow's Configuration. A value that isn't
+a number makes the copy fail rather than leave the secret on the clipboard.
 
 ### How `pswsync` keeps my data safe
 
@@ -164,11 +165,11 @@ Post Notification output, so notifications show the workflow icon. Their stdout 
 `{"alfredworkflow": {"arg": "<message>", "variables": {"notification_title": "<title>"}}}`, and they exit 0 even on
 errors so that Alfred still shows it.
 
-### `src/actions/copy_secret.sh`: secure copy
+### `src/actions/secret_pbcopy.sh`: secure copy
 
 Called by both actions with the secret on stdin. It copies it with JavaScript for Automation (`osascript -l JavaScript`),
 marked as concealed and transient and limited to this Mac, then starts a detached job that clears the clipboard
-after `CLEAR_CLIPBOARD_AFTER` seconds if the clipboard hasn't changed since.
+after `KEEP_CLIPBOARD_DELAY` seconds ("Keep Clipboard Delay" in the Configuration, default 30) if the clipboard hasn't changed since.
 
 ## Contribute
 

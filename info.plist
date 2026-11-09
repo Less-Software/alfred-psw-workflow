@@ -352,6 +352,27 @@ and require authentication before being copied (via main password or Touch ID).<
 			<key>variable</key>
 			<string>cipher_salt</string>
 		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>default</key>
+				<string>30</string>
+				<key>placeholder</key>
+				<string>30</string>
+				<key>required</key>
+				<true/>
+				<key>trim</key>
+				<true/>
+			</dict>
+			<key>description</key>
+			<string>Seconds a copied password or OTP code stays on the clipboard before it is cleared. The clipboard is left alone if you copied something else meanwhile.</string>
+			<key>label</key>
+			<string>Keep Clipboard Delay</string>
+			<key>type</key>
+			<string>textfield</string>
+			<key>variable</key>
+			<string>KEEP_CLIPBOARD_DELAY</string>
+		</dict>
 	</array>
 	<key>variablesdontexport</key>
 	<array/>

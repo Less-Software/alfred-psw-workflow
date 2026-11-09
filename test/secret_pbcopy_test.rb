@@ -1,13 +1,13 @@
-# Runs copy_secret.sh's real JavaScript on a private pasteboard, so the real clipboard is never touched.
+# Runs secret_pbcopy.sh's real JavaScript on a private pasteboard, so the real clipboard is never touched.
 require 'minitest/autorun'
 require 'open3'
 require 'json'
 require 'securerandom'
 
-class CopySecretTest < Minitest::Test
+class SecretPbcopyTest < Minitest::Test
   parallelize_me! # each test uses its own temp dir or pasteboard, so they can share the process
 
-  SCRIPT = File.expand_path('../src/actions/copy_secret.sh', __dir__)
+  SCRIPT = File.expand_path('../src/actions/secret_pbcopy.sh', __dir__)
 
   # Reads or writes the private pasteboard named argv[0]; with argv[1], replaces its text like another app would
   PASTEBOARD_JS = <<~JS
@@ -34,7 +34,7 @@ class CopySecretTest < Minitest::Test
   def copy(secret, clear_after: 30)
     _, err, st = Open3.capture3({
         'PASTEBOARD_NAME' => @name,
-        'CLEAR_CLIPBOARD_AFTER' => clear_after.to_s
+        'KEEP_CLIPBOARD_DELAY' => clear_after.to_s
       },
       SCRIPT,
       stdin_data: secret
@@ -67,5 +67,12 @@ class CopySecretTest < Minitest::Test
     pasteboard('copied later')
     sleep 0.5 # past the delay plus osascript's startup (~60ms)
     assert_equal 'copied later', pasteboard['text']
+  end
+
+  def test_rejects_a_delay_that_is_not_seconds
+    _, err, st = Open3.capture3({ 'PASTEBOARD_NAME' => @name, 'KEEP_CLIPBOARD_DELAY' => '30s' }, SCRIPT, stdin_data: 's3cr3t')
+    refute st.success?
+    assert_match(/KEEP_CLIPBOARD_DELAY must be a number of seconds/, err)
+    assert_nil pasteboard['text'] # never copied, so it can't stay on the clipboard
   end
 end

@@ -8,9 +8,9 @@ require 'fileutils'
 class ActionTest < Minitest::Test
   parallelize_me! # each test uses its own temp dir or pasteboard, so they can share the process
 
-  # Fakes prepended to PATH: brew points `--prefix apw` at a fake apw. osascript stands in for copy_secret.sh's
+  # Fakes prepended to PATH: brew points `--prefix apw` at a fake apw. osascript stands in for secret_pbcopy.sh's
   # JavaScript: the copy writes stdin to a file (fails if COPY_FAILS is set) and the delayed clear does nothing.
-  # copy_secret_test.rb covers the real JavaScript. Notifications go to stdout, for Alfred's Post Notification.
+  # secret_pbcopy_test.rb covers the real JavaScript. Notifications go to stdout, for Alfred's Post Notification.
   FAKES = {
     'osascript' => <<~'SH',
       if [ "$1" = -l ]; then
@@ -38,7 +38,7 @@ class ActionTest < Minitest::Test
   def teardown = FileUtils.rm_rf(@dir)
 
   def run_action(script, arg, apw_output:, apw_status: 0, env: {})
-    env = { 'PATH' => "#{@dir}/bin:#{ENV['PATH']}", 'FAKE_DIR' => @dir, 'CLEAR_CLIPBOARD_AFTER' => '0',
+    env = { 'PATH' => "#{@dir}/bin:#{ENV['PATH']}", 'FAKE_DIR' => @dir, 'KEEP_CLIPBOARD_DELAY' => '0',
             'APW_OUTPUT' => apw_output, 'APW_STATUS' => apw_status.to_s, **env }
     @out, err, st = Open3.capture3(env, File.expand_path("../src/actions/#{script}", __dir__), arg)
     [st, err]

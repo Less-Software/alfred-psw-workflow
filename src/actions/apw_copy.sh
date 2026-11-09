@@ -44,7 +44,7 @@ copy_from_apw() {
 
   if [ -z "$value" ]; then
     notify "No $label found for this username" Error
-  elif printf '%s' "$value" | "$(dirname "$0")/copy_secret.sh"; then
+  elif printf '%s' "$value" | "$(dirname "$0")/secret_pbcopy.sh"; then
     notify "$label copied to clipboard!" "Apple Passwords"
   else
     notify "Failed to copy to clipboard" Error
