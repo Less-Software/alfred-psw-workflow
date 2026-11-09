@@ -11,7 +11,7 @@ require 'base64'
 PROJECT_NAME = 'alfred-pw-workflow'
 SEED_PATH = File.expand_path("~/.config/#{PROJECT_NAME}/seed")
 CACHE_PATH = File.expand_path("~/.cache/#{PROJECT_NAME}/apw_cache.enc")
-IPHER = 'AES-256-CBC'
+CIPHER = 'AES-256-CBC'
 DIGEST = OpenSSL::Digest.new('SHA1')
 SALT = 'alfred-pw-workflow'
 
