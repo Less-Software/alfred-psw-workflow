@@ -1,9 +1,10 @@
-# alfred-pw-workflow
+# alfred-pw-workflow (macOS only)
 
-Alfred workflow to search Apple Passwords entries and copy a password or OTP code to the clipboard.
+Alfred workflow that lets you search Apple Passwords entries and copy a password or OTP code to the clipboard.
 
 Searching uses a local encrypted cache of titles, domains and usernames (never passwords).
-Passwords and OTP codes are fetched live from Apple Passwords through [apw](https://github.com/bendews/apw).
+Passwords and OTP codes are fetched live from Apple Passwords through [apw](https://github.com/bendews/apw),
+and require authentication before being copied (via main password or Touch ID).
 
 ## Usage
 
@@ -24,7 +25,7 @@ On the selected entry:
 
 Touch ID is then required to unlock the entry. A notification confirms the copy.
 
-## Dependencies
+## Setup
 
 Install [Homebrew](https://brew.sh), then:
 
@@ -42,53 +43,78 @@ The scripts find Homebrew's `ruby`, `apw` and `jq` with `brew --prefix <formula>
 the `$PATH` Alfred runs scripts with. The Ruby scripts start with a short `/bin/sh` launcher that re-runs
 them with Homebrew's ruby, because a shebang line can't call `brew`.
 
-## Files
+### `pwsync` command
 
-### `setup_cache.rb`: cache sync (run manually in Terminal)
-
-Builds the encrypted search cache from a Passwords CSV export. Alfred never runs it.
-Run it once to set up, then again whenever your passwords change:
+Builds the encrypted search cache from a Passwords CSV export.
+Run it once to set up, then again whenever you add, rename or delete entries in Passwords:
+`pw` only finds the entries that existed at the last sync.
 
 1. Export your passwords to a CSV file: in the Passwords app, **File → Export All Passwords…**
-   Save it to a RAM disk (see [Security](#security)).
-2. Run:
+   We recommend saving it to a RAM disk (see [Security](#security)).
+2. In Alfred, type `pwsync` and select the CSV file in the file picker that opens.
 
-   ```sh
-   ./setup_cache.rb ~/path/to/Passwords.csv
-   ```
+The cache is now ready and Passwords.csv has been deleted: you can start using `pw`.
 
-The script:
+## Troubleshooting
 
-- creates `~/.config/alfred-pw-workflow/seed` (random, mode `600`) if it doesn't exist yet,
+| Message | Fix |
+|---|---|
+| `apw execution failed or canceled` | Touch ID was canceled, or the apw daemon isn't running or paired: start it and run `apw auth` again (needed after every reboot). |
+| `Failed to parse password from JSON` | apw found no password for this entry, for example because it was deleted since the last sync: run `pwsync`. |
+| `No OTP found for this username` | The entry has no verification code in Passwords. |
+| `jq not found: brew install jq` | Install jq (macOS < 15 only). |
+| `Seed or Cache missing. Please run sync.` | Run `pwsync`. |
+| `Decryption or Parsing Error` | The cache was made on another Mac or with another seed, or is damaged: run `pwsync`. The subtitle shows the cause. |
+| `Error: unable to parse …` (after `pwsync`) | The CSV isn't a valid Passwords export: export it again. |
+
+If nothing happens at all, open the workflow in Alfred Preferences, click the debugger (🐞) icon and try
+again: it shows each step and any error. A common cause is `brew` missing from the `$PATH` Alfred runs scripts with.
+
+## Security
+
+*Note:* The Passwords.csv file exported by Passwords.app contains every password in clear text.
+Even though `pwsync` deletes it, a file written to your disk can be indexed by Spotlight or
+copied by Time Machine before then, and deleted data can stay recoverable on the drive.
+
+We recommend you export it to a RAM disk instead, so it never touches the disk.
+[RAM Folder](https://less-software.sh/ram-folder) is a modern, reliable way to do this:
+create a RAM Folder with **Sync RAM Folder** turned off, save the export there, and select it in the `pwsync`
+file picker.
+
+If you export to a regular folder instead, exclude it from Time Machine backups and from Spotlight indexing
+in System Settings.
+
+### How `pwsync` keeps my data safe
+
+- creates `~/.config/alfred-pw-workflow/seed` (secure random, mode `600`) if it doesn't exist yet,
 - derives the encryption key from that seed and this Mac's hardware UUID,
 - writes the title, domain and username of each entry to `~/.cache/alfred-pw-workflow/apw_cache.enc` (mode `600`),
+  for quick search when using `pw`,
 - **deletes the CSV file**, even if parsing fails.
 
 The cache can only be decrypted on the Mac that created it. If you delete the seed or move to another Mac,
 run the sync again.
 
-#### Security
+## How it works
 
-The CSV export contains every password in clear text. Even though `setup_cache.rb` deletes it, a file
-written to your disk can be indexed by Spotlight or copied by Time Machine before then, and deleted
-data can stay recoverable on the drive.
-
-Export it to a RAM disk instead, so it never touches the disk. [RAM Folder](https://less-software.sh/ram-folder)
-is a modern, reliable way to do this: create a RAM Folder with **Sync RAM Folder** turned off, save the
-export there, and pass that path to `setup_cache.rb`.
-
-### `alfred_filter_script.rb`: Alfred Script Filter
+### `alfred_filter_script.rb`: Alfred Script Filter (`pw`)
 
 Runs on every keystroke with the query as `$1`. Once the query has at least 4 characters, it decrypts
 the cache, keeps the entries whose title, domain or username contains the query, and returns them to Alfred
 as Script Filter JSON. Each result's `arg` is `username|domain`.
 
-### `action.sh`: Alfred action (default)
+### `setup_cache.rb`: cache creation (`pwsync`)
+
+Runs when invoked via `pwsync`: it uses AppleScript to open a file picker where the user selects their
+Passwords.csv export, then builds the cache from it.
+You can also run it directly: `path/to/setup_cache.rb path/to/Passwords.csv`.
+
+### `action.sh`: Alfred action (↩)
 
 Receives `username|domain`, runs `apw pw get <domain> <username>`, and copies the first result's password
 to the clipboard.
 
-### `alternative_action.sh`: Alfred alternative action (modifier key)
+### `alternative_action.sh`: Alfred alternative action (⌥↩)
 
 Receives `username|domain`, runs `apw otp get <domain>`, and copies the OTP `code` of the first result
 whose username matches to the clipboard.
@@ -96,7 +122,14 @@ whose username matches to the clipboard.
 Both action scripts use `/usr/bin/jq` if present, otherwise `$(brew --prefix jq)/bin/jq`, and show a
 macOS notification if jq is missing or if the lookup fails.
 
-## Tests
+## Contribute
+
+- Fork https://github.com/Less-Software/alfred-pw-workflow
+- Clone it to your development machine
+- Add tests for your change and run `rake` before opening a pull request
+- Open a pull request targeting the official repository
+
+### Tests
 
 ```sh
 rake
