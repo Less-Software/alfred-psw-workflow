@@ -116,12 +116,10 @@ store_payload = {
   'data' => Base64.strict_encode64(encrypted_data)
 }
 
-# Ensure directory exists and write encrypted cache
+# Write aside (mode 600 from creation) then rename: a failed write keeps the previous cache intact
 FileUtils.mkdir_p(File.dirname(CACHE_PATH))
-File.write(CACHE_PATH, JSON.generate(store_payload))
-
-# CRITICAL: Strict file permission hardening (chmod 600)
-File.chmod(0600, CACHE_PATH)
+File.write("#{CACHE_PATH}.tmp", JSON.generate(store_payload), perm: 0600)
+File.rename("#{CACHE_PATH}.tmp", CACHE_PATH)
 
 puts "Cache updated and securely encrypted successfully at #{CACHE_PATH} (#{cache_items.size} items processed)."
 notify("Cache updated: #{cache_items.size} items", 'Apple Passwords')

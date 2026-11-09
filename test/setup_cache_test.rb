@@ -111,6 +111,16 @@ class SetupCacheTest < Minitest::Test
     assert_equal 'reader|bücher.de', JSON.parse(out)['items'].first['arg']
   end
 
+  def test_failed_write_keeps_previous_cache
+    write_csv
+    assert run_script('setup_cache.rb', @csv)[2].success?
+    previous = File.read(@cache)
+    FileUtils.mkdir("#{@cache}.tmp") # makes the next write fail
+    write_csv
+    refute run_script('setup_cache.rb', @csv)[2].success?
+    assert_equal previous, File.read(@cache)
+  end
+
   # Runs setup_cache.rb with a fake osascript first on PATH; returns the notifications it got as [message, title].
   # The fake file picker answers `picked`, or cancels when it is nil. Sets @status, @err and @picker_calls.
   def notifications_from(*args, alfred: true, picked: nil)
