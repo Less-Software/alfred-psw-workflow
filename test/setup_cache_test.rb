@@ -86,11 +86,20 @@ class SetupCacheTest < Minitest::Test
   end
 
   def test_malformed_csv
-    File.write(@csv, "Title,URL\n\"unclosed,x\n")
+    File.write(@csv, "Title,URL,Username,Password\n\"unclosed,x\n")
     _, err, st = run_script('setup_cache.rb', @csv)
     assert_equal 1, st.exitstatus
     assert_match(/unable to parse/, err)
     refute File.exist?(@csv)   # still deleted on failure
+    refute File.exist?(@cache)
+  end
+
+  def test_other_csv_left_untouched
+    File.write(@csv, "Date,Amount\n2026-01-01,12.50\n") # e.g. a bank export picked by mistake
+    _, err, st = run_script('setup_cache.rb', @csv)
+    assert_equal 1, st.exitstatus
+    assert_match(/not a Passwords export/, err)
+    assert File.exist?(@csv)
     refute File.exist?(@cache)
   end
 
@@ -121,7 +130,7 @@ class SetupCacheTest < Minitest::Test
   end
 
   def test_alfred_notifies_failure
-    File.write(@csv, "Title,URL\nBooks,https://bücher.de/\n") # URI rejects non-ASCII hosts
+    File.write(@csv, "Title,URL,Password\nBooks,https://bücher.de/,pw\n") # URI rejects non-ASCII hosts
     (message, title), = notifications_from(@csv)
     assert_equal 'Error', title
     assert_match(/unable to parse/, message)

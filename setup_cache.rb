@@ -42,6 +42,14 @@ csv_path = File.expand_path(csv_arg)
 
 fail! "Error: Passwords CSV file not found at #{csv_path}" unless File.exist?(csv_path)
 
+# Only a Passwords export holds secrets that must be deleted: leave any other CSV untouched
+begin
+  headers = CSV.open(csv_path, encoding: 'utf-8', &:shift)
+rescue CSV::MalformedCSVError => e
+  fail! "Error: unable to parse #{csv_path}: #{e.message}"
+end
+fail! "Error: #{csv_path} is not a Passwords export (no Password column), left untouched" unless headers&.include?('Password')
+
 # 1. Derive encryption key from seed (generated on first run)
 begin
   unless File.exist?(SEED_PATH)

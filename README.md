@@ -81,6 +81,7 @@ The cache is now ready and Passwords.csv has been deleted: you can start using `
 | `Seed or Cache missing. Please run sync.` | Run `pswsync`. |
 | `Decryption or Parsing Error` | The cache was made on another Mac or with another seed, or is damaged: run `pswsync`. The subtitle shows the cause. |
 | `Error: unable to parse …` (after `pswsync`) | The CSV isn't a valid Passwords export: export it again. |
+| `Error: … is not a Passwords export` (after `pswsync`) | The picked CSV has no `Password` column, so it was left untouched: pick your Passwords export. |
 
 If nothing happens at all, open the workflow in Alfred Preferences, click the debugger (🐞) icon and try
 again: it shows each step and any error. A common cause is `brew` missing from the `$PATH` Alfred runs scripts with.
@@ -114,7 +115,8 @@ delay, set the `CLEAR_CLIPBOARD_AFTER` workflow variable (in seconds) in Alfred'
 - derives the encryption key from that seed, the cipher "salt" and this Mac's hardware UUID,
 - writes the title, domain and username of each entry to `~/.cache/alfred-psw-workflow/apw_cache.enc` (mode `600`),
   for quick search when using `psw`,
-- **deletes the CSV file**, even if parsing fails.
+- **deletes the CSV file**, even if parsing fails. A CSV without a `Password` column isn't a Passwords export:
+  it is left untouched, so picking the wrong file can't delete it.
 
 The cache can only be decrypted on the Mac that created it. If you delete the seed or move to another Mac,
 run the sync again.
