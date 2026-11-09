@@ -11,8 +11,8 @@ class SetupCacheTest < Minitest::Test
   def setup
     @home = Dir.mktmpdir # scripts write under ~, so a fake HOME protects the real seed/cache
     @csv = File.join(@home, 'pw.csv')
-    @seed = File.join(@home, '.config/alfred-pw-workflow/seed')
-    @cache = File.join(@home, '.cache/alfred-pw-workflow/apw_cache.enc')
+    @seed = File.join(@home, '.config/alfred-psw-workflow/seed')
+    @cache = File.join(@home, '.cache/alfred-psw-workflow/apw_cache.enc')
   end
 
   def teardown = FileUtils.rm_rf(@home)

@@ -8,8 +8,8 @@ require 'fileutils'
 class AlfredFilterScriptTest < Minitest::Test
   def setup
     @home = Dir.mktmpdir # scripts write under ~, so a fake HOME protects the real seed/cache
-    @seed = File.join(@home, '.config/alfred-pw-workflow/seed')
-    @cache = File.join(@home, '.cache/alfred-pw-workflow/apw_cache.enc')
+    @seed = File.join(@home, '.config/alfred-psw-workflow/seed')
+    @cache = File.join(@home, '.cache/alfred-psw-workflow/apw_cache.enc')
   end
 
   def teardown = FileUtils.rm_rf(@home)
@@ -48,7 +48,7 @@ class AlfredFilterScriptTest < Minitest::Test
   def test_missing_cache
     items = search('github')
     assert_equal 'Seed or Cache missing. Please run sync.', items[0]['title']
-    assert_match(/pwsync/, items[0]['subtitle'])
+    assert_match(/pswsync/, items[0]['subtitle'])
   end
 
   def test_corrupt_cache

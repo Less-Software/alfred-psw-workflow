@@ -12,7 +12,7 @@ def version
   end
 end
 
-def package_path = "releases/alfred-pw-workflow-#{version}.alfredworkflow"
+def package_path = "releases/alfred-psw-workflow-#{version}.alfredworkflow"
 
 def tag?(name) = system('git', 'rev-parse', '-q', '--verify', "refs/tags/#{name}", out: File::NULL)
 
@@ -26,7 +26,7 @@ task :bump, [:version] do |_, args|
   sh 'git', 'tag', '-a', v, '-m', v
 end
 
-desc 'Build releases/alfred-pw-workflow-<version>.alfredworkflow from the git tag named after the info.plist version'
+desc 'Build releases/alfred-psw-workflow-<version>.alfredworkflow from the git tag named after the info.plist version'
 task :package do
   abort "No tag #{version}: run rake \"bump[#{version}]\"" unless tag?(version)
   mkdir_p 'releases'

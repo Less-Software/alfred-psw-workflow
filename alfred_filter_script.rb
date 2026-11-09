@@ -8,12 +8,12 @@ require 'json'
 require 'openssl'
 require 'base64'
 
-PROJECT_NAME = 'alfred-pw-workflow'
+PROJECT_NAME = 'alfred-psw-workflow'
 SEED_PATH = File.expand_path("~/.config/#{PROJECT_NAME}/seed")
 CACHE_PATH = File.expand_path("~/.cache/#{PROJECT_NAME}/apw_cache.enc")
 CIPHER = 'AES-256-CBC'
 DIGEST = OpenSSL::Digest.new('SHA1')
-SALT = 'alfred-pw-workflow'
+CIPHER_SALT = ENV.fetch('cipher_salt', PROJECT_NAME)
 
 # Without a locale (LANG unset), ARGV is tagged BINARY and non-ASCII queries fail to compare
 query = ARGV[0].to_s.dup.force_encoding(Encoding::UTF_8).strip
@@ -47,7 +47,7 @@ end
 unless File.exist?(SEED_PATH) && File.exist?(CACHE_PATH)
   response = {
     items: [{ title: "Seed or Cache missing. Please run sync.",
-              subtitle: "Type pwsync in Alfred and select your Passwords CSV export", valid: false }]
+              subtitle: "Type pswsync in Alfred and select your Passwords CSV export", valid: false }]
   }
   puts JSON.generate(response)
   exit 0
@@ -60,7 +60,7 @@ begin
   # Bind the key to this Mac: a copied seed + cache is useless elsewhere
   hw_uuid = `/usr/sbin/ioreg -rd1 -c IOPlatformExpertDevice`[/"IOPlatformUUID" = "([^"]+)"/, 1]
   raise 'cannot read hardware UUID' unless hw_uuid
-  key = OpenSSL::PKCS5.pbkdf2_hmac(seed, "#{SALT}|#{hw_uuid}", 10000, 32, DIGEST)
+  key = OpenSSL::PKCS5.pbkdf2_hmac(seed, "#{CIPHER_SALT}|#{hw_uuid}", 10000, 32, DIGEST)
 
   # Read and decrypt cache
   encrypted_store = JSON.parse(File.read(CACHE_PATH))

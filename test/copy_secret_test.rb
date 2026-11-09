@@ -19,7 +19,7 @@ class CopySecretTest < Minitest::Test
     }
   JS
 
-  def setup = @name = "alfred-pw-workflow-test-#{SecureRandom.hex(4)}"
+  def setup = @name = "alfred-psw-workflow-test-#{SecureRandom.hex(4)}"
   def teardown = pasteboard('release')
 
   def pasteboard(*args)

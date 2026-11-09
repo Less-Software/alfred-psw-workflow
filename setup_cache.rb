@@ -12,12 +12,12 @@ require 'fileutils'
 require 'securerandom'
 require 'uri'
 
-PROJECT_NAME = 'alfred-pw-workflow'
+PROJECT_NAME = 'alfred-psw-workflow'
 SEED_PATH = File.expand_path("~/.config/#{PROJECT_NAME}/seed")
 CACHE_PATH = File.expand_path("~/.cache/#{PROJECT_NAME}/apw_cache.enc")
 CIPHER = 'AES-256-CBC'
 DIGEST = OpenSSL::Digest.new('SHA1')
-SALT = PROJECT_NAME
+CIPHER_SALT = ENV.fetch('cipher_salt', PROJECT_NAME)
 
 # Alfred's File Action shows no output, so report there with a notification; Terminal has stdout/stderr
 def notify(message, title)
@@ -35,7 +35,7 @@ end
 
 csv_arg = ARGV[0].to_s
 
-# The pwsync keyword passes no file: ask for one with a file picker
+# The pswsync keyword passes no file: ask for one with a file picker
 if csv_arg.empty? && ENV['alfred_version']
   # activate brings osascript's dialog in front of other windows
   csv_arg = IO.popen(['osascript', '-e', 'activate', '-e', 'POSIX path of (choose file with prompt ' \
@@ -61,7 +61,7 @@ begin
   # Bind the key to this Mac: a copied seed + cache is useless elsewhere
   hw_uuid = `/usr/sbin/ioreg -rd1 -c IOPlatformExpertDevice`[/"IOPlatformUUID" = "([^"]+)"/, 1]
   raise 'cannot read hardware UUID' unless hw_uuid
-  key = OpenSSL::PKCS5.pbkdf2_hmac(seed, "#{SALT}|#{hw_uuid}", 10000, 32, DIGEST)
+  key = OpenSSL::PKCS5.pbkdf2_hmac(seed, "#{CIPHER_SALT}|#{hw_uuid}", 10000, 32, DIGEST)
 rescue => e
   fail! "Error reading seed: #{e.message}"
 end

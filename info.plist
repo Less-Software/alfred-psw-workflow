@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>bundleid</key>
-	<string>sh.less-software.pw-alfred-workflow</string>
+	<string>sh.less-software.psw-workflow</string>
 	<key>category</key>
 	<string>Productivity</string>
 	<key>connections</key>
@@ -52,7 +52,7 @@
 	<key>disabled</key>
 	<false/>
 	<key>name</key>
-	<string>Password Workflow</string>
+	<string>Passwords.app Workflow</string>
 	<key>objects</key>
 	<array>
 		<dict>
@@ -94,7 +94,7 @@
 				<key>escaping</key>
 				<integer>0</integer>
 				<key>keyword</key>
-				<string>pw</string>
+				<string>{var:keyword}</string>
 				<key>queuedelaycustom</key>
 				<integer>3</integer>
 				<key>queuedelayimmediatelyinitially</key>
@@ -179,7 +179,7 @@
 				<key>argumenttype</key>
 				<integer>2</integer>
 				<key>keyword</key>
-				<string>pwsync</string>
+				<string>pswsync</string>
 				<key>subtext</key>
 				<string>Select exported Passwords.csv from Password.app</string>
 				<key>text</key>
@@ -196,10 +196,10 @@
 		</dict>
 	</array>
 	<key>readme</key>
-	<string>alfred-pw-workflow lets you search Apple **Passwords.app** entries by using the `pw` keyword and copy a password (main action) or OTP code (alternative action) to *a secure, expiring clipboard*.
+	<string>alfred-psw-workflow lets you search Apple **Passwords.app** entries by using the `psw` keyword and copy a password (main action) or OTP code (alternative action) to *a secure, expiring clipboard*.
 
 Searching uses a pre-computed local encrypted cache of titles, domains and usernames (never passwords).
-This cache is created from a **Passwords.csv** export from **Password.app**, and imported via `pwsync`.
+This cache is created from a **Passwords.csv** export from **Password.app**, and imported via `pswsync`.
 
 Passwords and OTP codes are fetched live from Apple Passwords through [apw](https://github.com/bendews/apw),
 and require authentication before being copied (via main password or Touch ID).</string>
@@ -242,6 +242,51 @@ and require authentication before being copied (via main password or Touch ID).<
 		</dict>
 	</dict>
 	<key>userconfigurationconfig</key>
+	<array>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>default</key>
+				<string>psw</string>
+				<key>placeholder</key>
+				<string>psw</string>
+				<key>required</key>
+				<true/>
+				<key>trim</key>
+				<true/>
+			</dict>
+			<key>description</key>
+			<string>Keyword to search your passwords</string>
+			<key>label</key>
+			<string>Search Keyword</string>
+			<key>type</key>
+			<string>textfield</string>
+			<key>variable</key>
+			<string>keyword</string>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>default</key>
+				<string>alfred-psw-workflow</string>
+				<key>placeholder</key>
+				<string>alfred-psw-workflow</string>
+				<key>required</key>
+				<true/>
+				<key>trim</key>
+				<true/>
+			</dict>
+			<key>description</key>
+			<string>Salt used to derive the cache encryption key. Changing it requires rebuilding the cache.</string>
+			<key>label</key>
+			<string>Cipher Salt</string>
+			<key>type</key>
+			<string>textfield</string>
+			<key>variable</key>
+			<string>cipher_salt</string>
+		</dict>
+	</array>
+	<key>variablesdontexport</key>
 	<array/>
 	<key>version</key>
 	<string>v0.1.0-rc1</string>
