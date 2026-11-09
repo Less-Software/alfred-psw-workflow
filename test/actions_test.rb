@@ -49,11 +49,19 @@ class ActionTest < Minitest::Test
   def otp_json(**codes) = JSON.generate(results: codes.map { |u, c| { username: u.to_s, code: c } })
 
   def test_password_copied
-    st, err = run_action('action.sh', ' octo | github.com ', apw_output: pw_json('s3cr3t', 'other'))
+    st, err = run_action('action.sh', 'octo|github.com', apw_output: pw_json('s3cr3t', 'other'))
     assert st.success?, err
-    assert_equal "pw get github.com octo\n", read('apw_args') # spaces trimmed, domain before username
+    assert_equal "pw get github.com octo\n", read('apw_args') # domain before username
     assert_equal 's3cr3t', read('clipboard')                  # first result, no trailing newline
     assert_match(/Password copied to clipboard!/, notification)
+  end
+
+  def test_username_with_quote_and_pipe
+    user = %q(o'brien|"x")
+    st, err = run_action('action.sh', "#{user}|github.com", apw_output: pw_json('s3cr3t'))
+    assert st.success?, err
+    assert_equal "pw get github.com #{user}\n", read('apw_args')
+    assert_equal 's3cr3t', read('clipboard')
   end
 
   def test_password_apw_failure
@@ -77,7 +85,7 @@ class ActionTest < Minitest::Test
   end
 
   def test_otp_copied_for_matching_username
-    st, err = run_action('alternative_action.sh', ' octo | github.com ',
+    st, err = run_action('alternative_action.sh', 'octo|github.com',
                          apw_output: otp_json(alice: '111111', octo: '222222'))
     assert st.success?, err
     assert_equal "otp get github.com\n", read('apw_args')

@@ -1,11 +1,9 @@
 #!/bin/bash
 
-# $@ contains "username|domain" passed from Alfred
-IFS='|' read -r USERNAME DOMAIN <<< "$@"
-
-# Fallback clean-up in case leading/trailing spaces crept in
-USERNAME=$(echo "$USERNAME" | xargs)
-DOMAIN=$(echo "$DOMAIN" | xargs)
+# $1 is "username|domain" from Alfred. A domain never contains '|', so split on the last one:
+# a username may contain '|' or quotes
+USERNAME="${1%|*}"
+DOMAIN="${1##*|}"
 
 APW="$(brew --prefix apw)/bin/apw"
 
