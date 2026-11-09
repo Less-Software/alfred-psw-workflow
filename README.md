@@ -133,6 +133,8 @@ Runs when invoked via `pswsync`: it uses AppleScript to open a file picker where
 Passwords.csv export, then builds the cache from it.
 You can also run it directly: `path/to/setup_cache.rb path/to/Passwords.csv`.
 
+Both Ruby scripts derive the cache key with `cache_key.rb`.
+
 ### `action.sh`: Alfred action (↩)
 
 Receives `username|domain`, runs `apw pw get <domain> <username>`, and copies the first result's password

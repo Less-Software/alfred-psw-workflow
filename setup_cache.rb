@@ -6,18 +6,11 @@ exec "$(brew --prefix ruby)/bin/ruby" -x "$0" "$@"
 
 require 'csv'
 require 'json'
-require 'openssl'
 require 'base64'
 require 'fileutils'
 require 'securerandom'
 require 'uri'
-
-PROJECT_NAME = 'alfred-psw-workflow'
-SEED_PATH = File.expand_path("~/.config/#{PROJECT_NAME}/seed")
-CACHE_PATH = File.expand_path("~/.cache/#{PROJECT_NAME}/apw_cache.enc")
-CIPHER = 'AES-256-CBC'
-DIGEST = OpenSSL::Digest.new('SHA1')
-CIPHER_SALT = ENV.fetch('cipher_salt', PROJECT_NAME)
+require_relative 'cache_key'
 
 # Alfred's File Action shows no output, so report there with a notification; Terminal has stdout/stderr
 def notify(message, title)
@@ -56,12 +49,7 @@ begin
     File.open(SEED_PATH, File::WRONLY | File::CREAT | File::EXCL, 0600) { |f| f.write(SecureRandom.hex(32)) }
     puts "Generated new seed at #{SEED_PATH}"
   end
-  seed = File.read(SEED_PATH).strip
-  raise "seed file #{SEED_PATH} is empty" if seed.empty?
-  # Bind the key to this Mac: a copied seed + cache is useless elsewhere
-  hw_uuid = `/usr/sbin/ioreg -rd1 -c IOPlatformExpertDevice`[/"IOPlatformUUID" = "([^"]+)"/, 1]
-  raise 'cannot read hardware UUID' unless hw_uuid
-  key = OpenSSL::PKCS5.pbkdf2_hmac(seed, "#{CIPHER_SALT}|#{hw_uuid}", 10000, 32, DIGEST)
+  key = cache_key
 rescue => e
   fail! "Error reading seed: #{e.message}"
 end
