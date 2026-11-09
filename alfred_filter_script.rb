@@ -8,13 +8,15 @@ require 'json'
 require 'openssl'
 require 'base64'
 
-SEED_PATH = File.expand_path('~/.config/alfred-pw-workflow/seed')
-CACHE_PATH = File.expand_path('~/.cache/alfred-pw-workflow/apw_cache.enc')
-CIPHER = 'AES-256-CBC'
+PROJECT_NAME = 'alfred-pw-workflow'
+SEED_PATH = File.expand_path("~/.config/#{PROJECT_NAME}/seed")
+CACHE_PATH = File.expand_path("~/.cache/#{PROJECT_NAME}/apw_cache.enc")
+IPHER = 'AES-256-CBC'
 DIGEST = OpenSSL::Digest.new('SHA1')
 SALT = 'alfred-pw-workflow'
 
-query = ARGV[0].to_s.strip
+# Without a locale (LANG unset), ARGV is tagged BINARY and non-ASCII queries fail to compare
+query = ARGV[0].to_s.dup.force_encoding(Encoding::UTF_8).strip
 
 # Some abstractions to enhance readability
 class String
