@@ -183,3 +183,5 @@ cache, clipboard or Passwords.
 ## Sponsoring
 
 If this workflow is useful to you, consider [sponsoring Less Software on GitHub](https://github.com/sponsors/Less-Software).
+
+Discover more tools made with care at [less-software.sh](https://less-software.sh/).
