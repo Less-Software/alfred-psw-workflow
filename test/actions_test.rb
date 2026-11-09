@@ -1,4 +1,3 @@
-# Run: "$(brew --prefix ruby)/bin/ruby" test/actions_test.rb
 # Covers action.sh (password) and alternative_action.sh (OTP). Uses the system /usr/bin/jq (macOS 15+).
 require 'minitest/autorun'
 require 'open3'

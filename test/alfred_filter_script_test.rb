@@ -1,4 +1,3 @@
-# Run: "$(brew --prefix ruby)/bin/ruby" test/alfred_filter_script_test.rb
 # macOS only: the cache key is bound to the hardware UUID read via ioreg.
 require 'minitest/autorun'
 require 'open3'
