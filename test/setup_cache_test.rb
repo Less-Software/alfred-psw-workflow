@@ -5,10 +5,11 @@ require 'tmpdir'
 require 'json'
 require 'fileutils'
 
-ROOT = File.expand_path('..', __dir__)
+ROOT = File.expand_path('../src', __dir__)
 
 class SetupCacheTest < Minitest::Test
   parallelize_me! # each test uses its own temp dir or pasteboard, so they can share the process
+
   def setup
     @home = Dir.mktmpdir # scripts write under ~, so a fake HOME protects the real seed/cache
     @csv = File.join(@home, 'pw.csv')
@@ -39,7 +40,7 @@ class SetupCacheTest < Minitest::Test
     refute File.exist?(@csv)               # input CSV is deleted
     [@seed, @cache].each { |f| assert_equal 0o600, File.stat(f).mode & 0o777 }
 
-    out, = run_script('alfred_filter_script.rb', 'local')
+    out, = run_script('main.rb', 'local')
     assert_equal 'admin|localhost:8080', JSON.parse(out)['items'].first['arg'] # non-default port kept
   end
 
@@ -53,7 +54,7 @@ class SetupCacheTest < Minitest::Test
 
     # No locale set, as Alfred may run scripts: the query must still be read as UTF-8
     no_locale = { 'LANG' => nil, 'LC_ALL' => nil, 'LC_CTYPE' => nil }
-    out, err, st = run_script('alfred_filter_script.rb', 'CRÈME', env: no_locale) # matches case-insensitively
+    out, err, st = run_script('main.rb', 'CRÈME', env: no_locale) # matches case-insensitively
     assert st.success?, err
     item = JSON.parse(out)['items'].first
     assert_equal 'Café Crème ☕', item['title']
@@ -108,7 +109,7 @@ class SetupCacheTest < Minitest::Test
     File.write(@csv, "Title,URL,Username,Password\nBooks,https://bücher.de/a b,reader,pw\n") # URI rejects both
     _, err, st = run_script('setup_cache.rb', @csv)
     assert st.success?, err
-    out, = run_script('alfred_filter_script.rb', 'books')
+    out, = run_script('main.rb', 'books')
     assert_equal 'reader|bücher.de', JSON.parse(out)['items'].first['arg']
   end
 

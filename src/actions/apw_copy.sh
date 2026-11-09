@@ -1,4 +1,4 @@
-# Sourced by action.sh and alternative_action.sh with $1 = "username|domain" from Alfred.
+# Sourced by main.sh and alt.sh with $1 = "username|domain" from Alfred.
 # stdout goes to Alfred's Post Notification output (which shows the workflow icon): print exactly one notify.
 
 # Messages and titles are our own constants, without quotes or backslashes, so they need no JSON escaping

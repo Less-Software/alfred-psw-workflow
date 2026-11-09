@@ -1,5 +1,5 @@
 # encoding: utf-8
-# Shared by setup_cache.rb and alfred_filter_script.rb: both must derive the same key to read the cache
+# Shared by setup_cache.rb and main.rb: both must derive the same key to read the cache
 
 require 'openssl'
 

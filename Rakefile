@@ -4,7 +4,7 @@ Rake::TestTask.new { _1.pattern = 'test/*_test.rb' }
 
 task default: :test
 
-WORKFLOW_FILES = %w[info.plist icon.png cache_key.rb alfred_filter_script.rb setup_cache.rb apw_copy.sh action.sh alternative_action.sh copy_secret.sh]
+WORKFLOW_FILES = %w[info.plist icon.png src]
 
 def version
   @version ||= `plutil -extract version raw info.plist`.strip.tap do |v|

@@ -132,31 +132,31 @@ run the sync again.
 
 ## How it works
 
-### `alfred_filter_script.rb`: Alfred Script Filter (`psw`)
+### `src/main.rb`: Alfred Script Filter (`psw`)
 
 Runs on every keystroke with the query as `$1`. Once the query has at least 4 characters, it decrypts
 the cache, keeps the entries whose title, domain or username contains the query, and returns them to Alfred
 as Script Filter JSON. Each result's `arg` is `username|domain`.
 
-### `setup_cache.rb`: cache creation (`pswsync`)
+### `src/setup_cache.rb`: cache creation (`pswsync`)
 
 Runs when invoked via `pswsync`: it uses AppleScript to open a file picker where the user selects their
 Passwords.csv export, then builds the cache from it.
-You can also run it directly: `path/to/setup_cache.rb path/to/Passwords.csv`.
+You can also run it directly: `src/setup_cache.rb path/to/Passwords.csv`.
 
-Both Ruby scripts derive the cache key with `cache_key.rb`.
+Both Ruby scripts derive the cache key with `src/cache_key.rb`.
 
-### `action.sh`: Alfred action (↩)
+### `src/actions/main.sh`: Alfred action (↩)
 
 Receives `username|domain`, runs `apw pw get <domain> <username>`, and copies the password of the first result
 whose username matches to the clipboard.
 
-### `alternative_action.sh`: Alfred alternative action (⌥↩)
+### `src/actions/alt.sh`: Alfred alternative action (⌥↩)
 
 Receives `username|domain`, runs `apw otp get <domain>`, and copies the OTP `code` of the first result
 whose username matches to the clipboard.
 
-Both action scripts share `apw_copy.sh`, which splits the argument on its last `|` (a username may contain one),
+Both action scripts share `src/actions/apw_copy.sh`, which splits the argument on its last `|` (a username may contain one),
 runs apw and copies the result. They use `/usr/bin/jq` if present, otherwise `$(brew --prefix jq)/bin/jq`.
 
 The action scripts and `setup_cache.rb` report the outcome (copied, or what failed) by printing it for Alfred's
@@ -164,7 +164,7 @@ Post Notification output, so notifications show the workflow icon. Their stdout 
 `{"alfredworkflow": {"arg": "<message>", "variables": {"notification_title": "<title>"}}}`, and they exit 0 even on
 errors so that Alfred still shows it.
 
-### `copy_secret.sh`: secure copy
+### `src/actions/copy_secret.sh`: secure copy
 
 Called by both actions with the secret on stdin. It copies it with JavaScript for Automation (`osascript -l JavaScript`),
 marked as concealed and transient and limited to this Mac, then starts a detached job that clears the clipboard

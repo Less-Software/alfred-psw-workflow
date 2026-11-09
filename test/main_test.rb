@@ -5,8 +5,9 @@ require 'tmpdir'
 require 'json'
 require 'fileutils'
 
-class AlfredFilterScriptTest < Minitest::Test
+class MainTest < Minitest::Test
   parallelize_me! # each test uses its own temp dir or pasteboard, so they can share the process
+
   def setup
     @home = Dir.mktmpdir # scripts write under ~, so a fake HOME protects the real seed/cache
     @seed = File.join(@home, '.config/alfred-psw-workflow/seed')
@@ -16,7 +17,7 @@ class AlfredFilterScriptTest < Minitest::Test
   def teardown = FileUtils.rm_rf(@home)
 
   def run_script(name, *args)
-    Open3.capture3({ 'HOME' => @home }, RbConfig.ruby, '-x', File.expand_path("../#{name}", __dir__), *args)
+    Open3.capture3({ 'HOME' => @home }, RbConfig.ruby, '-x', File.expand_path("../src/#{name}", __dir__), *args)
   end
 
   # Build the cache with the real setup script, so both sides share the format
@@ -34,7 +35,7 @@ class AlfredFilterScriptTest < Minitest::Test
   end
 
   def search(query)
-    out, err, st = run_script('alfred_filter_script.rb', query)
+    out, err, st = run_script('main.rb', query)
     assert st.success?, err
     JSON.parse(out)['items']
   end
