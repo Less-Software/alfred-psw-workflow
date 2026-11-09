@@ -65,7 +65,7 @@ end
 # 2. Parse the CSV file efficiently
 cache_items = []
 begin
-  # CSV headers: Title,domain,Username,Password,Notes,OTPAuth
+  # CSV headers: Title,URL,Username,Password,Notes,OTPAuth
   CSV.foreach(csv_path, headers: true, encoding: 'utf-8') do |row|
     title = row['Title']
     url = row['URL'].to_s
@@ -79,12 +79,7 @@ begin
 
     next if title.nil? && domain.nil? && username.nil?
 
-    # Generate a unique identifier based on title/domain/username combination
-    id_string = "#{title}|#{domain}|#{username}"
-    item_id = Digest::SHA1.hexdigest(id_string)[0..12]
-
     cache_items << {
-      'id' => item_id,
       'title' => title.to_s.strip,
       'domain' => domain.to_s.strip,
       'username' => username.to_s.strip
