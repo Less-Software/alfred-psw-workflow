@@ -12,9 +12,12 @@ require 'fileutils'
 require 'securerandom'
 require 'uri'
 
-SEED_PATH = File.expand_path('~/.config/alfred-pw-workflow/seed')
-CACHE_PATH = File.expand_path('~/.cache/alfred-pw-workflow/apw_cache.enc')
-SALT = 'alfred-pw-workflow'
+PROJECT_NAME = 'alfred-pw-workflow'
+SEED_PATH = File.expand_path("~/.config/#{PROJECT_NAME}/seed")
+CACHE_PATH = File.expand_path("~/.cache/#{PROJECT_NAME}/apw_cache.enc")
+CIPHER = 'AES-256-CBC'
+DIGEST = OpenSSL::Digest.new('SHA1')
+SALT = PROJECT_NAME
 
 if ARGV[0].to_s.empty?
   STDERR.puts "Usage: #{File.basename($0)} <Passwords.csv>"
@@ -40,7 +43,7 @@ begin
   # Bind the key to this Mac: a copied seed + cache is useless elsewhere
   hw_uuid = `/usr/sbin/ioreg -rd1 -c IOPlatformExpertDevice`[/"IOPlatformUUID" = "([^"]+)"/, 1]
   raise 'cannot read hardware UUID' unless hw_uuid
-  key = OpenSSL::PKCS5.pbkdf2_hmac(seed, "#{SALT}|#{hw_uuid}", 10000, 32, OpenSSL::Digest.new('SHA1'))
+  key = OpenSSL::PKCS5.pbkdf2_hmac(seed, "#{SALT}|#{hw_uuid}", 10000, 32, DIGEST)
 rescue => e
   STDERR.puts "Error reading seed: #{e.message}"
   exit 1
@@ -63,7 +66,7 @@ begin
 
     # Generate a unique identifier based on title/domain/username combination
     id_string = "#{title}|#{domain}|#{username}"
-    item_id = Digest::SHA256.hexdigest(id_string)[0..12]
+    item_id = Digest::SHA1.hexdigest(id_string)[0..12]
 
     cache_items << {
       'id' => item_id,
@@ -72,6 +75,9 @@ begin
       'username' => username.to_s.strip
     }
   end
+rescue CSV::MalformedCSVError => e
+  STDERR.puts "Error: unable to parse #{csv_path}: #{e.message}"
+  exit 1
 ensure
   # CRITICAL SECURITY STEP: Remove the CSV file immediately after parsing, 
   # even if an exception occurs during parsing.
@@ -82,7 +88,7 @@ ensure
 end
 
 # 3. Encrypt the parsed metadata payload (No passwords are ever stored in cache)
-cipher = OpenSSL::Cipher.new('AES-256-CBC')
+cipher = OpenSSL::Cipher.new(CIPHER)
 cipher.encrypt
 cipher.key = key
 iv = cipher.random_iv

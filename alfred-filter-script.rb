@@ -10,6 +10,8 @@ require 'base64'
 
 SEED_PATH = File.expand_path('~/.config/alfred-pw-workflow/seed')
 CACHE_PATH = File.expand_path('~/.cache/alfred-pw-workflow/apw_cache.enc')
+CIPHER = 'AES-256-CBC'
+DIGEST = OpenSSL::Digest.new('SHA1')
 SALT = 'alfred-pw-workflow'
 
 query = ARGV[0].to_s.strip
@@ -55,14 +57,14 @@ begin
   # Bind the key to this Mac: a copied seed + cache is useless elsewhere
   hw_uuid = `/usr/sbin/ioreg -rd1 -c IOPlatformExpertDevice`[/"IOPlatformUUID" = "([^"]+)"/, 1]
   raise 'cannot read hardware UUID' unless hw_uuid
-  key = OpenSSL::PKCS5.pbkdf2_hmac(seed, "#{SALT}|#{hw_uuid}", 10000, 32, OpenSSL::Digest.new('SHA1'))
+  key = OpenSSL::PKCS5.pbkdf2_hmac(seed, "#{SALT}|#{hw_uuid}", 10000, 32, DIGEST)
 
   # Read and decrypt cache
   encrypted_store = JSON.parse(File.read(CACHE_PATH))
   iv = Base64.strict_decode64(encrypted_store['iv'])
   encrypted_data = Base64.strict_decode64(encrypted_store['data'])
 
-  cipher = OpenSSL::Cipher.new('AES-256-CBC')
+  cipher = OpenSSL::Cipher.new(CIPHER)
   cipher.decrypt
   cipher.key = key
   cipher.iv = iv
