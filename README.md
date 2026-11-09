@@ -82,6 +82,7 @@ The cache is now ready and Passwords.csv has been deleted: you can start using `
 | `Decryption or Parsing Error` | The cache was made on another Mac or with another seed, or is damaged: run `pswsync`. The subtitle shows the cause. |
 | `Error: unable to parse …` (after `pswsync`) | The CSV isn't a valid Passwords export: export it again. |
 | `Error: … is not a Passwords export` (after `pswsync`) | The picked CSV has no `Password` column, so it was left untouched: pick your Passwords export. |
+| A result says `no website` and can't be selected | apw finds entries by website, so entries without one can't be copied from Alfred: copy them from Passwords. |
 
 If nothing happens at all, open the workflow in Alfred Preferences, click the debugger (🐞) icon and try
 again: it shows each step and any error. A common cause is `brew` missing from the `$PATH` Alfred runs scripts with.

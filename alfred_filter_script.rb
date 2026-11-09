@@ -98,7 +98,9 @@ displayed_items = sorted_items.map do |item|
 
   {
     title: display_title,
-    subtitle: subtitle,
+    # apw looks entries up by website, so one without a website can't be copied from here
+    subtitle: domain.empty? ? "#{subtitle} (no website: copy it from Passwords)" : subtitle,
+    valid: !domain.empty?,
     arg: pass_arg,
     text: {
       copy: display_title,
