@@ -10,9 +10,16 @@ notify() {
 USERNAME="${1%|*}"
 DOMAIN="${1##*|}"
 
+# Errors exit 0: Alfred may not run the notification after a failed script
+
+# apw finds entries by website: for one without, open Passwords.app so the user can copy it there
+if [ -z "$DOMAIN" ]; then
+  open -b com.apple.Passwords || notify "Couldn't open Passwords" Error
+  exit 0
+fi
+
 APW="$(brew --prefix apw)/bin/apw"
 
-# Errors exit 0: Alfred may not run the notification after a failed script
 # Prefer system jq (macOS 15+), then Homebrew's
 JQ=/usr/bin/jq
 [ -x "$JQ" ] || JQ="$(brew --prefix jq)/bin/jq"

@@ -20,6 +20,7 @@ class ActionTest < Minitest::Test
       echo "unexpected osascript call: $*" >&2; exit 1
     SH
     'brew' => %(echo "$FAKE_DIR"),
+    'open' => %(printf '%s\\n' "$*" > "$FAKE_DIR/open_args"; exit "${OPEN_STATUS:-0}"),
     'apw' => %(printf '%s\\n' "$*" > "$FAKE_DIR/apw_args"; printf '%s' "$APW_OUTPUT"; exit "${APW_STATUS:-0}")
   }.freeze
 
@@ -110,6 +111,22 @@ class ActionTest < Minitest::Test
       assert st.success?, err
       assert_equal ['Failed to copy to clipboard', 'Error'], notification, script
     end
+  end
+
+  def test_no_website_opens_passwords
+    %w[action.sh alternative_action.sh].each do |script|
+      st, err = run_action(script, 'solo|', apw_output: '')
+      assert st.success?, err
+      assert_equal "-b com.apple.Passwords\n", read('open_args'), script
+      assert_nil read('apw_args'), script # apw can't look up an entry without a website
+      assert_empty @out, script           # Passwords opening is the feedback: no notification
+    end
+  end
+
+  def test_no_website_open_failure_is_reported
+    st, err = run_action('action.sh', 'solo|', apw_output: '', env: { 'OPEN_STATUS' => '1' })
+    assert st.success?, err
+    assert_equal ["Couldn't open Passwords", 'Error'], notification
   end
 
   def test_otp_no_matching_username

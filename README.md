@@ -33,6 +33,8 @@ On the selected entry:
 Touch ID is then required to unlock the entry. A notification confirms the copy.
 The clipboard is cleared 30 seconds later, unless you copied something else meanwhile (see [Security](#security)).
 
+apw finds entries by website, so for an entry without one, ↩ and ⌥↩ open Passwords.app instead.
+
 <br>
 <div align="center">
   <img width="764" height="402" alt="'psw john' query in Alfred" src="https://github.com/user-attachments/assets/c4e9efce-2a9b-4c0a-a935-4dd9e9250f8d" />
@@ -82,7 +84,7 @@ The cache is now ready and Passwords.csv has been deleted: you can start using `
 | `Decryption or Parsing Error` | The cache was made on another Mac or with another seed, or is damaged: run `pswsync`. The subtitle shows the cause. |
 | `Error: unable to parse …` (after `pswsync`) | The CSV isn't a valid Passwords export: export it again. |
 | `Error: … is not a Passwords export` (after `pswsync`) | The picked CSV has no `Password` column, so it was left untouched: pick your Passwords export. |
-| A result says `no website` and can't be selected | apw finds entries by website, so entries without one can't be copied from Alfred: copy them from Passwords. |
+| A result says `can't copy without website` | apw finds entries by website, so selecting an entry without one opens Passwords.app instead: copy it from there. |
 
 If nothing happens at all, open the workflow in Alfred Preferences, click the debugger (🐞) icon and try
 again: it shows each step and any error. A common cause is `brew` missing from the `$PATH` Alfred runs scripts with.

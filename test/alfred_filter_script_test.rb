@@ -82,8 +82,8 @@ class AlfredFilterScriptTest < Minitest::Test
     build_cache
     item = search('solo').first
     assert_equal 'solo', item['title']
-    assert_equal 'user: solo (no website: copy it from Passwords)', item['subtitle']
-    assert_equal false, item['valid'] # apw can't look it up without a website
+    assert_equal "user: solo (can't copy without website, ↩ open Passwords app)", item['subtitle']
+    assert_equal 'solo|', item['arg'] # selectable: the actions open Passwords.app for it
   end
 
   def test_no_match
