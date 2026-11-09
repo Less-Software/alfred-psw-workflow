@@ -62,16 +62,16 @@ end
 # Filter and sort locally
 q = query.downcase
 filtered_items = items_data.select do |item|
-  domain = item['domain'].to_s.downcase
-  username = item['username'].to_s.downcase
-  title = item['title'].to_s.downcase.strip
+  domain = item['domain'].downcase
+  username = item['username'].downcase
+  title = item['title'].downcase
   domain.include?(q) || username.include?(q) || title.include?(q)
 end
 
 sorted_items = filtered_items.sort_by do |item|
-  title = item['title'].to_s.downcase
-  domain = item['domain'].to_s.downcase
-  username = item['username'].to_s.downcase
+  title = item['title'].downcase
+  domain = item['domain'].downcase
+  username = item['username'].downcase
  
   match_title = title.include?(q) ? 0 : 1
   match_domain = domain.include?(q) ? 0 : 1
