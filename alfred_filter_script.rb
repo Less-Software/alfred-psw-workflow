@@ -11,17 +11,6 @@ require_relative 'cache_key'
 # Without a locale (LANG unset), ARGV is tagged BINARY and non-ASCII queries fail to compare
 query = ARGV[0].to_s.dup.force_encoding(Encoding::UTF_8).strip
 
-# Some abstractions to enhance readability
-class String
-  def blank?
-    strip.empty?
-  end
-
-  def present?
-    !blank?
-  end
-end
-
 # Rule: Wait for at least 4 characters before searching
 if query.length < 4
   response = {
@@ -96,11 +85,12 @@ displayed_items = sorted_items.map do |item|
   domain = item['domain']
   username = item['username']
  
-  display_title = [title, domain, username].find(&:present?)
-  
+  # setup_cache.rb stores stripped strings, so empty? is enough
+  display_title = [title, domain, username].find { !_1.empty? }
+
   subtitle = [
-    ("user: #{username}" if username.present?),
-    ("domain: #{domain}" if domain.present?)
+    ("user: #{username}" unless username.empty?),
+    ("domain: #{domain}" unless domain.empty?)
   ].compact.join(' | ')
 
   # Pass 'username|domain' directly into arg so we don't need to parse the cache again
