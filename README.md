@@ -180,6 +180,10 @@ rake
 The tests run on macOS only. They use fake `HOME` and `PATH` directories, so they never touch your real
 cache, clipboard or Passwords.
 
+## License
+
+[MIT](LICENSE)
+
 ## Sponsoring
 
 If this workflow is useful to you, consider [sponsoring Less Software on GitHub](https://github.com/sponsors/Less-Software).
