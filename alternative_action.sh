@@ -1,36 +1,5 @@
 #!/bin/bash
+# Alfred alternative action (⌥↩): copies the OTP code of the selected "username|domain" entry
+source "$(dirname "$0")/apw_copy.sh"
 
-# $1 is "username|domain" from Alfred. A domain never contains '|', so split on the last one:
-# a username may contain '|' or quotes
-USERNAME="${1%|*}"
-DOMAIN="${1##*|}"
-
-APW="$(brew --prefix apw)/bin/apw"
-
-# Prefer system jq (macOS 15+), then Homebrew's
-JQ=/usr/bin/jq
-[ -x "$JQ" ] || JQ="$(brew --prefix jq)/bin/jq"
-if [ ! -x "$JQ" ]; then
-  osascript -e 'display notification "jq not found: brew install jq" with title "Error"'
-  exit 1
-fi
-
-APW_JSON_OUTPUT=$("$APW" otp get "$DOMAIN")
-EXIT_CODE=$?
-
-if [ $EXIT_CODE -ne 0 ] || [ -z "$APW_JSON_OUTPUT" ]; then
-  osascript -e 'display notification "apw execution failed or canceled" with title "Error"'
-  exit 1
-fi
-
-# First entry whose username matches
-OTP=$(echo "$APW_JSON_OUTPUT" | "$JQ" -r --arg u "$USERNAME" \
-  'first(.results[]? | select(.username == $u) | .code) // empty')
-
-if [ -z "$OTP" ]; then
-  osascript -e 'display notification "No OTP found for this username" with title "Error"'
-elif printf '%s' "$OTP" | "$(dirname "$0")/copy_secret.sh"; then
-  osascript -e 'display notification "OTP copied to clipboard!" with title "Apple Passwords"'
-else
-  osascript -e 'display notification "Failed to copy to clipboard" with title "Error"'
-fi
+copy_from_apw code OTP otp get "$DOMAIN"

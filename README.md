@@ -148,7 +148,8 @@ whose username matches to the clipboard.
 Receives `username|domain`, runs `apw otp get <domain>`, and copies the OTP `code` of the first result
 whose username matches to the clipboard.
 
-Both action scripts use `/usr/bin/jq` if present, otherwise `$(brew --prefix jq)/bin/jq`, and show a
+Both action scripts share `apw_copy.sh`, which splits the argument on its last `|` (a username may contain one),
+runs apw and copies the result. They use `/usr/bin/jq` if present, otherwise `$(brew --prefix jq)/bin/jq`, and show a
 macOS notification if jq is missing or if the lookup fails.
 
 ### `copy_secret.sh`: secure copy
