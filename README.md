@@ -13,11 +13,9 @@ and require authentication before being copied (via main password or Touch ID).
 
 In Alfred, type `psw` followed by at least 4 characters, for example `psw github`.
 You can change the `psw` keyword in the Workflow's Configuration.
-The Configuration also holds the "Cipher Salt" used in the key derivation process to encrypt the cache
-(default `alfred-psw-workflow`);
-if you change it, rebuild the cache.
 
 The search is case-insensitive and matches any entry whose title, domain or username contains the text.
+
 Results are ordered by:
 
 1. matches in the title,
@@ -77,10 +75,20 @@ The cache is now ready and Passwords.csv has been deleted: you can start using `
 </div>
 <br>
 
+## Configuration variables
+
+The following variables are configurable via Alfred:
+
+| Name | Description | Default |
+|------|-------------|---------|
+| Search Keyword | Keyword to trigger password search | `psw` |
+| Cipher Salt | Salt used during key-derivation process for encryption | `alfred-psw-workflow` |
+| Keep Clipboard Delay | Number of seconds to keep password/OTP in secure clipboard | `30` |
+
 ## Troubleshooting
 
 | Message | Fix |
-|---|---|
+|---------|-----|
 | `apw execution failed or canceled` | Touch ID was canceled, or the apw daemon isn't running or paired: start it and run `apw auth` again (needed after every reboot). |
 | `No Password found for this username` | apw found no password for this account, for example because it was deleted or renamed since the last sync: run `pswsync`. |
 | `No OTP found for this username` | The entry has no verification code in Passwords. |
