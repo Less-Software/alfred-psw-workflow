@@ -1,5 +1,7 @@
 # alfred-psw-workflow (macOS only)
 
+<img width="64" height="64" alt="alfred-psw-icon" src="https://github.com/user-attachments/assets/a4cc102f-93ef-4811-b29a-db2288846162"><br>
+
 Alfred workflow that lets you search Apple **Passwords.app** entries and copy a password (main action) or OTP code
 (alternative action) to *a secure, expiring clipboard*.
 
@@ -12,7 +14,7 @@ and require authentication before being copied (via main password or Touch ID).
 ## Usage
 
 In Alfred, type `psw` followed by at least 4 characters, for example `psw github`.
-You can change the `psw` keyword in the Workflow's Configuration.
+You can change the `psw` keyword in the [Workflow's Configuration](#configuration-variables).
 
 The search is case-insensitive and matches any entry whose title, domain or username contains the text.
 
@@ -29,7 +31,8 @@ On the selected entry:
 - **⌥↩ (Option-Enter)** copies the current OTP code to the clipboard.
 
 Touch ID is then required to unlock the entry. A notification confirms the copy.
-The clipboard is cleared 30 seconds later, unless you copied something else meanwhile (see [Security](#security)).
+The clipboard is cleared 30 seconds later ([delay is configurable](#configuration-variables)),
+unless you copied something else meanwhile (see [Security](#security)).
 
 apw finds entries by website, so for an entry without one, ↩ and ⌥↩ open Passwords.app instead.
 
