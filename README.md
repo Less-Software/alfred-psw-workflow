@@ -71,6 +71,12 @@ Run it once to set up, then again whenever you add, rename or delete entries in 
 
 The cache is now ready and Passwords.csv has been deleted: you can start using `psw`.
 
+<br>
+<div align="center">
+  <video src="https://github.com/user-attachments/assets/60db8913-8a09-4522-8edd-1b473578a4ae">
+</div>
+<br>
+
 ## Troubleshooting
 
 | Message | Fix |
