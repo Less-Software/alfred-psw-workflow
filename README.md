@@ -86,7 +86,7 @@ The following variables are configurable via Alfred:
 |------|-------------|---------|
 | Search Keyword | Keyword to trigger password search | `psw` |
 | Cipher Salt | Salt used during key-derivation process for encryption | `alfred-psw-workflow` |
-| Keep Clipboard Delay | Number of seconds to keep password/OTP in secure clipboard | `30` |
+| Keep Clipboard Delay | Number of seconds (decimals allowed) to keep password/OTP in secure clipboard | `30` |
 
 ## Troubleshooting
 
@@ -127,13 +127,13 @@ markers, which tell clipboard managers that respect them not to record the copy.
 Universal Clipboard, so they aren't sent to your other Apple devices.
 
 The clipboard is cleared 30 seconds after the copy, unless something else was copied meanwhile. To change the
-delay, set "Keep Clipboard Delay" (in seconds, decimals allowed) in the Workflow's Configuration. A value that isn't
+delay, set "Keep Clipboard Delay" in the [Workflow's Configuration](#configuration-variables). A value that isn't
 a number makes the copy fail rather than leave the secret on the clipboard.
 
 ### How `pswsync` keeps my data safe
 
 - creates `~/.config/alfred-psw-workflow/seed` (secure random, mode `600`) if it doesn't exist yet,
-- derives the encryption key from that seed, the cipher "salt" and this Mac's hardware UUID,
+- derives the encryption key from that seed, the cipher customisable "salt" and this Mac's hardware UUID,
 - writes the title, domain and username of each entry to `~/.cache/alfred-psw-workflow/apw_cache.enc` (mode `600`),
   for quick search when using `psw`,
 - **deletes the CSV file**, even if parsing fails. A CSV without a `Password` column isn't a Passwords export:
@@ -180,7 +180,7 @@ errors so that Alfred still shows it.
 
 Called by both actions with the secret on stdin. It copies it with JavaScript for Automation (`osascript -l JavaScript`),
 marked as concealed and transient and limited to this Mac, then starts a detached job that clears the clipboard
-after `KEEP_CLIPBOARD_DELAY` seconds ("Keep Clipboard Delay" in the Configuration, default 30) if the clipboard hasn't changed since.
+after `KEEP_CLIPBOARD_DELAY` seconds (["Keep Clipboard Delay"](#configuration-variables)) if the clipboard hasn't changed since.
 
 ## Contribute
 
