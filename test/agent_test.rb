@@ -42,8 +42,14 @@ class AgentTest < Minitest::Test
 
   # Returns the fakes' calls
   def run_script(list_status:, pin: '', processes: USER_CHROME + APW_CHROME, daemon_stopped: false)
-    env = { 'PATH' => "#{@dir}/bin:#{ENV['PATH']}", 'FAKE_DIR' => @dir, 'LIST_STATUS' => list_status.to_s,
-            'PIN' => pin, 'PROCESSES' => processes, 'DAEMON_STOPPED' => (daemon_stopped ? '1' : nil) }
+    env = {
+      'PATH' => "#{@dir}/bin:#{ENV['PATH']}",
+      'FAKE_DIR' => @dir,
+      'LIST_STATUS' => list_status.to_s,
+      'PIN' => pin,
+      'PROCESSES' => processes,
+      'DAEMON_STOPPED' => (daemon_stopped ? '1' : nil)
+    }
     FileUtils.rm_f(File.join(@dir, 'calls')) # calls of this run only
     _, err, st = Open3.capture3(env, File.expand_path('../src/agent.sh', __dir__))
     assert st.success?, err

@@ -143,8 +143,10 @@ class SetupWorkflowTest < Minitest::Test
     File.write(File.join(bin, 'launchctl'), %(#!/bin/bash\nprintf '%s\\n' "$*" >> "#{launchctl_log}"\n))
     %w[osascript launchctl].each { File.chmod(0o755, File.join(bin, _1)) }
     env = {
-      'PATH' => "#{bin}:#{ENV['PATH']}", 'alfred_version' => (alfred ? '5.5' : nil),
-      'PICKED' => picked, 'APW_LAUNCH_SCRIPT' => launch_script
+      'PATH' => "#{bin}:#{ENV['PATH']}",
+      'alfred_version' => (alfred ? '5.5' : nil),
+      'PICKED' => picked,
+      'APW_LAUNCH_SCRIPT' => launch_script
     }
     out, @err, @status = run_script('setup_workflow.rb', *args, env: env)
     @picker_calls = File.exist?(picker_log) ? File.readlines(picker_log, chomp: true) : []
@@ -267,7 +269,13 @@ class SetupWorkflowTest < Minitest::Test
 
   def test_generate_launch_agent_run_directly # as agent.sh does, without a locale or the workflow's variables
     notifications_from(launch_script: '0') # only creates the fake launchctl
-    env = { 'HOME' => @home, 'PATH' => "#{@home}/bin:#{ENV['PATH']}", 'LANG' => nil, 'LC_ALL' => nil, 'LC_CTYPE' => nil }
+    env = {
+      'HOME' => @home,
+      'PATH' => "#{@home}/bin:#{ENV['PATH']}",
+      'LANG' => nil,
+      'LC_ALL' => nil,
+      'LC_CTYPE' => nil
+    }
     _, err, st = Open3.capture3(env, RbConfig.ruby, File.join(ROOT, 'generate_launch_agent.rb'))
     assert st.success?, err
     assert system('plutil', '-lint', '-s', agent), File.read(agent)
