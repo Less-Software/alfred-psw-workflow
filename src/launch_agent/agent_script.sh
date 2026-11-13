@@ -1,10 +1,10 @@
 #!/bin/bash
-# Run at login and every 15 minutes by the LaunchAgent pswsetup installs (see generate_launch_agent.rb).
+# Run at login and every 15 minutes by the LaunchAgent pswsetup installs (see generate.rb).
 # The apw daemon loses its session when it restarts: authenticate it again with the PIN Apple Passwords shows.
 
 # Bring the installed agent up to date with this workflow version. Reloading a changed agent ends this run,
 # and the new agent runs at once.
-"$(brew --prefix ruby)/bin/ruby" "$(dirname "$0")/generate_launch_agent.rb"
+"$(brew --prefix ruby)/bin/ruby" "$(dirname "$0")/generate.rb"
 
 APW="$(brew --prefix apw)/bin/apw"
 

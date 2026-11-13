@@ -1,4 +1,4 @@
-# Covers agent.sh, run by the LaunchAgent pswsetup installs.
+# Covers agent_script.sh, run by the LaunchAgent pswsetup installs.
 require 'minitest/autorun'
 require 'open3'
 require 'tmpdir'
@@ -51,12 +51,12 @@ class AgentTest < Minitest::Test
       'DAEMON_STOPPED' => (daemon_stopped ? '1' : nil)
     }
     FileUtils.rm_f(File.join(@dir, 'calls')) # calls of this run only
-    _, err, st = Open3.capture3(env, File.expand_path('../src/agent.sh', __dir__))
+    _, err, st = Open3.capture3(env, File.expand_path('../src/launch_agent/agent_script.sh', __dir__))
     assert st.success?, err
     File.readlines(File.join(@dir, 'calls'), chomp: true)
   end
 
-  UPDATE = 'ruby generate_launch_agent.rb'
+  UPDATE = 'ruby generate.rb'
 
   def test_authenticated
     assert_equal [UPDATE, 'apw pw list example.invalid'], run_script(list_status: 3) # 3: no results

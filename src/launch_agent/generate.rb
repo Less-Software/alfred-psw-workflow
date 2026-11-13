@@ -1,8 +1,8 @@
 # encoding: utf-8
 
-# Installs, updates or removes the LaunchAgent that runs agent.sh at login and every 15 minutes to keep apw
-# authenticated. setup_workflow.rb (pswsetup) calls it, and agent.sh runs it directly so that a workflow update
-# that changes the template also updates the installed agent.
+# Installs, updates or removes the LaunchAgent that runs agent_script.sh at login and every 15 minutes
+# to keep apw authenticated. setup_workflow.rb (pswsetup) calls it, and agent_script.sh runs it
+# directly so that a workflow update that changes the template also updates the installed agent.
 
 require 'fileutils'
 
@@ -25,7 +25,7 @@ def generate_launch_agent
   # Without a locale (LANG unset, as under launchd), paths are tagged BINARY
   values = {
     label:,
-    script: File.expand_path('agent.sh', __dir__),
+    script: File.expand_path('agent_script.sh', __dir__),
     plist: path,
     path: ENV['PATH'].to_s
   }.transform_values { _1.dup.force_encoding(Encoding::UTF_8).encode(xml: :text) }
@@ -36,8 +36,8 @@ def generate_launch_agent
 
   FileUtils.mkdir_p(File.dirname(path))
   File.write(path, plist)
-  # Run from agent.sh, bootout kills the agent's process group: reload from a group of its own so that bootstrap
-  # still runs. The new agent then runs at once (RunAtLoad).
+  # Run from agent_script.sh, bootout kills the agent's process group: reload from a group of its own
+  # so that bootstrap still runs. The new agent then runs at once (RunAtLoad).
   reload = ''
   reload << 'launchctl bootout "$0/$2" 2>/dev/null; ' if installed
   reload << 'launchctl bootstrap "$0" "$1"'

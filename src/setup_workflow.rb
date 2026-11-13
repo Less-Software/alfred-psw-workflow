@@ -11,7 +11,7 @@ require 'fileutils'
 require 'securerandom'
 require 'uri'
 require_relative 'cache_key'
-require_relative 'generate_launch_agent'
+require_relative 'launch_agent/generate'
 
 # In Alfred, stdout goes to the Post Notification output (which shows the workflow icon), so it must hold
 # only that message: progress lines go to stderr, shown in Alfred's debugger. Terminal keeps both streams.

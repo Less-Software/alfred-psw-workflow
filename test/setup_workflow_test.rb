@@ -230,7 +230,7 @@ class SetupWorkflowTest < Minitest::Test
     notifications_from # even when the picker is canceled
     assert_equal ["bootstrap gui/#{Process.uid} #{agent}"], @launchctl_calls
     assert system('plutil', '-lint', '-s', agent), File.read(agent)
-    assert_includes File.read(agent), File.join(ROOT, 'agent.sh')
+    assert_includes File.read(agent), File.join(ROOT, 'launch_agent/agent_script.sh')
 
     notifications_from
     assert_empty @launchctl_calls # already installed
@@ -239,8 +239,9 @@ class SetupWorkflowTest < Minitest::Test
   def test_apw_auth_agent_uninstalls_itself_with_the_workflow
     notifications_from
     args = JSON.parse(IO.popen(['plutil', '-extract', 'ProgramArguments', 'json', '-o', '-', agent], &:read))
-    assert_equal File.join(ROOT, 'agent.sh'), args[3]
-    args[3] = File.join(@home, 'deleted-workflow/src/agent.sh') # never runs the real agent.sh
+    assert_equal File.join(ROOT, 'launch_agent/agent_script.sh'), args[3]
+    # Never runs the real agent_script.sh
+    args[3] = File.join(@home, 'deleted-workflow/src/launch_agent/agent_script.sh')
     _, err, st = Open3.capture3({ 'PATH' => "#{@home}/bin:#{ENV['PATH']}" }, *args)
     assert st.success?, err
     refute File.exist?(agent)
@@ -267,7 +268,8 @@ class SetupWorkflowTest < Minitest::Test
     assert_equal ["bootout gui/#{Process.uid}/sh.less-software.psw-workflow.apw-auth"], @launchctl_calls
   end
 
-  def test_generate_launch_agent_run_directly # as agent.sh does, without a locale or the workflow's variables
+  # As agent_script.sh does, without a locale or the workflow's variables
+  def test_generate_launch_agent_run_directly
     notifications_from(launch_script: '0') # only creates the fake launchctl
     env = {
       'HOME' => @home,
@@ -276,7 +278,7 @@ class SetupWorkflowTest < Minitest::Test
       'LC_ALL' => nil,
       'LC_CTYPE' => nil
     }
-    _, err, st = Open3.capture3(env, RbConfig.ruby, File.join(ROOT, 'generate_launch_agent.rb'))
+    _, err, st = Open3.capture3(env, RbConfig.ruby, File.join(ROOT, 'launch_agent/generate.rb'))
     assert st.success?, err
     assert system('plutil', '-lint', '-s', agent), File.read(agent)
     assert_equal ["bootstrap gui/#{Process.uid} #{agent}"], File.readlines(File.join(@home, 'launchctl_calls'), chomp: true)

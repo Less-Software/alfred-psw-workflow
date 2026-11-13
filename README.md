@@ -75,11 +75,12 @@ Run it once to set up, then again whenever you add, rename or delete entries in 
 The cache is now ready and Passwords.csv has been deleted: you can start using `psw`.
 
 `pswsetup` also installs a LaunchAgent (`~/Library/LaunchAgents/sh.less-software.psw-workflow.apw-auth.plist`)
-that runs `src/agent.sh` at login and every 15 minutes. It opens Google Chrome if it isn't running and, when apw
-isn't authenticated, asks for the PIN shown by Apple Passwords. To opt out, uncheck "APW Launch Script" in the
-[Workflow's Configuration](#configuration-variables) and run `pswsetup` again: it removes the LaunchAgent.
-Deleting the workflow is enough too: at its next run, the LaunchAgent finds `src/agent.sh` gone and removes
-itself. Workflow updates need no `pswsetup`: each run brings the LaunchAgent up to date first.
+that runs `src/launch_agent/agent_script.sh` at login and every 15 minutes. It opens Google Chrome if it isn't
+running and, when apw isn't authenticated, asks for the PIN shown by Apple Passwords. To opt out, uncheck "APW
+Launch Script" in the [Workflow's Configuration](#configuration-variables) and run `pswsetup` again: it
+removes the LaunchAgent. Deleting the workflow is enough too: at its next run, the LaunchAgent finds
+`src/launch_agent/agent_script.sh` gone and removes itself. Workflow updates need no `pswsetup`: each run
+brings the LaunchAgent up to date first.
 
 <br>
 <div align="center">
@@ -164,27 +165,29 @@ as Script Filter JSON. Each result's `arg` is `username|domain`.
 ### `src/setup_workflow.rb`: workflow setup (`pswsetup`)
 
 Runs when invoked via `pswsetup`: it installs, updates or removes the apw auth LaunchAgent (with
-`src/generate_launch_agent.rb`), then uses AppleScript to open a file picker where the user selects their
+`src/launch_agent/generate.rb`), then uses AppleScript to open a file picker where the user selects their
 Passwords.csv export, then builds the cache from it.
 You can also run it directly: `src/setup_workflow.rb path/to/Passwords.csv`.
 
 Both Ruby scripts derive the cache key with `src/cache_key.rb`.
 
-### `src/generate_launch_agent.rb`: apw auth LaunchAgent
+### `src/launch_agent/generate.rb`: apw auth LaunchAgent
 
-Fills `src/sh.less-software.psw-workflow.apw-auth.plist.tpl` with the paths of `src/agent.sh` and the plist, and the
-current `$PATH` (launchd's lacks Homebrew). It writes the result to `~/Library/LaunchAgents/` and reloads the agent
-when the result differs from the installed plist, or removes the agent when `APW_LAUNCH_SCRIPT` is `0`.
-`setup_workflow.rb` calls it, and `agent.sh` runs it directly: `$(brew --prefix ruby)/bin/ruby src/generate_launch_agent.rb`.
+Fills `src/launch_agent/sh.less-software.psw-workflow.apw-auth.plist.tpl` with the paths of
+`src/launch_agent/agent_script.sh` and the plist, and the current `$PATH` (launchd's lacks Homebrew). It
+writes the result to `~/Library/LaunchAgents/` and reloads the agent when the result differs from the
+installed plist, or removes the agent when `APW_LAUNCH_SCRIPT` is `0`. `setup_workflow.rb` calls it, and
+`agent_script.sh` runs it directly: `$(brew --prefix ruby)/bin/ruby src/launch_agent/generate.rb`.
 
-### `src/agent.sh`: apw authentication (LaunchAgent)
+### `src/launch_agent/agent_script.sh`: apw authentication (LaunchAgent)
 
-Runs `generate_launch_agent.rb` first, so that a workflow update that changes the template updates the installed
-agent: the reload ends this run and starts the new agent. It then opens Google Chrome if it isn't running, then runs `apw pw list example.invalid`: status 9 means apw isn't running
-or authenticated. If no `apw start` process is running, it shows a dialog with the commands that start the daemon
-(`brew services start apw`, or `apw start` for a custom install) and a link to apw's Getting Started guide, and stops
-there. Otherwise it runs `apw auth request`, asks for the PIN in an AppleScript dialog and passes it to
-`apw auth response --pin`, asking again with a new PIN when it's wrong. Canceling the dialog waits for the next run.
+Runs `generate.rb` first, so that a workflow update that changes the template updates the installed agent: the
+reload ends this run and starts the new agent. It then opens Google Chrome if it isn't running, then runs
+`apw pw list example.invalid`: status 9 means apw isn't running or authenticated. If no `apw start` process is
+running, it shows a dialog with the commands that start the daemon (`brew services start apw`, or `apw start`
+for a custom install) and a link to apw's Getting Started guide, and stops there. Otherwise it runs
+`apw auth request`, asks for the PIN in an AppleScript dialog and passes it to `apw auth response --pin`,
+asking again with a new PIN when it's wrong. Canceling the dialog waits for the next run.
 
 ### `src/actions/main.sh`: Alfred action (↩)
 
