@@ -7,31 +7,22 @@ exec "$(brew --prefix ruby)/bin/ruby" -x "$0" "$@"
 require 'json'
 require 'base64'
 require_relative 'cache_key'
+require_relative 'alfred_query'
+require_relative 'alfred_output'
 
 # Without a locale (LANG unset), ARGV is tagged BINARY and non-ASCII queries fail to compare
 query = ARGV[0].to_s.dup.force_encoding(Encoding::UTF_8).strip
 
 # Rule: Wait for at least 4 characters before searching
 if query.length < 4
-  response = {
-    items: [
-      {
-        title: "Please type at least 4 characters...",
-        subtitle: "Current search: '#{query}' (#{4 - query.length} characters remaining)",
-        valid: false
-      }
-    ]
-  }
-  puts JSON.generate(response)
+  AlfredOutput.render_error("Please type at least 4 characters...",
+    "Current search: '#{query}' (#{4 - query.length} characters remaining)")
   exit 0
 end
 
 unless File.exist?(SEED_PATH) && File.exist?(CACHE_PATH)
-  response = {
-    items: [{ title: "Seed or Cache missing. Please run sync.",
-              subtitle: "Type pswsync in Alfred and select your Passwords CSV export", valid: false }]
-  }
-  puts JSON.generate(response)
+  AlfredOutput.render_error("Seed or Cache missing. Please run sync.",
+    "Type pswsync in Alfred and select your Passwords CSV export")
   exit 0
 end
 
@@ -52,68 +43,13 @@ begin
   items_data = JSON.parse(decrypted_json)
 
 rescue => e
-  response = {
-    items: [{ title: "Decryption or Parsing Error", subtitle: e.message, valid: false }]
-  }
-  puts JSON.generate(response)
+  AlfredOutput.render_error("Decryption or Parsing Error", e.message)
   exit 0
 end
 
-# Filter and sort locally
-q = query.downcase
-filtered_items = items_data.select do |item|
-  domain = item['domain'].downcase
-  username = item['username'].downcase
-  title = item['title'].downcase
-  domain.include?(q) || username.include?(q) || title.include?(q)
+formatted_items = AlfredQuery.new(query).match(items_data)
+if formatted_items.any?
+  AlfredOutput.render(formatted_items)
+else
+  AlfredOutput.render_error("No credentials found for '#{query}'")
 end
-
-sorted_items = filtered_items.sort_by do |item|
-  title = item['title'].downcase
-  domain = item['domain'].downcase
-  username = item['username'].downcase
-
-  match_title = title.include?(q) ? 0 : 1
-  match_domain = domain.include?(q) ? 0 : 1
-  match_username = username.include?(q) ? 0 : 1
-
-  [match_title, match_domain, match_username, domain, username]
-end
-
-displayed_items = sorted_items.map do |item|
-  title = item['title']
-  domain = item['domain']
-  username = item['username']
-
-  # setup_cache.rb stores stripped strings, so empty? is enough
-  display_title = [title, domain, username].find { !_1.empty? }
-
-  subtitle = [
-    ("user: #{username}" unless username.empty?),
-    ("domain: #{domain}" unless domain.empty?)
-  ].compact.join(' | ')
-
-  # Pass 'username|domain' directly into arg so we don't need to parse the cache again
-  pass_arg = "#{username}|#{domain}"
-
-  {
-    title: display_title,
-    # apw looks entries up by website: for one without, the actions open Passwords.app instead
-    subtitle: domain.empty? ? "#{subtitle} (can't copy without website, ↩ open Passwords app)" : subtitle,
-    arg: pass_arg,
-    text: {
-      copy: display_title,
-      largeType: display_title
-    }
-  }
-end
-
-if displayed_items.empty?
-  displayed_items = [{
-    title: "No credentials found for '#{query}'",
-    valid: false
-  }]
-end
-
-response = { items: displayed_items }
-puts JSON.generate(response)
