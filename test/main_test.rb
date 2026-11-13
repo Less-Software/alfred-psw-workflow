@@ -27,9 +27,7 @@ class MainTest < Minitest::Test
     File.write(csv, <<~CSV)
       Title,URL,Username,Password,Notes,OTPAuth
       GitHub,https://github.com/login,octo,secret,,
-      ,https://gitlab.com/,alice,pw,,
       Work Mail,https://mail.example.com/,github-bot,pw,,
-      ,,solo,pw,,
     CSV
     _, err, st = run_script('setup_cache.rb', csv)
     assert st.success?, err
@@ -66,26 +64,10 @@ class MainTest < Minitest::Test
     assert_equal 'Decryption or Parsing Error', search('github')[0]['title']
   end
 
-  def test_matches_title_domain_or_username_with_title_matches_first
+  # Matching, ordering and item details are covered by alfred_query_test.rb
+  def test_lists_matching_entries
     build_cache
     assert_equal ['GitHub', 'Work Mail'], search('github').map { _1['title'] }
-  end
-
-  def test_case_insensitive_and_falls_back_to_domain
-    build_cache
-    item = search('GITLAB').first
-    assert_equal 'gitlab.com', item['title']
-    assert_equal 'user: alice | domain: gitlab.com', item['subtitle']
-    assert_equal 'alice|gitlab.com', item['arg']
-    assert_equal 'gitlab.com', item['text']['copy']
-  end
-
-  def test_username_only_entry
-    build_cache
-    item = search('solo').first
-    assert_equal 'solo', item['title']
-    assert_equal "user: solo (can't copy without website, ↩ open Passwords app)", item['subtitle']
-    assert_equal 'solo|', item['arg'] # selectable: the actions open Passwords.app for it
   end
 
   def test_no_match

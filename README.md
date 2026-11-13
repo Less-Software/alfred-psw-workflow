@@ -16,7 +16,8 @@ and require authentication before being copied (via main password or Touch ID).
 In Alfred, type `psw` followed by at least 4 characters, for example `psw github`.
 You can change the `psw` keyword in the [Workflow's Configuration](#configuration-variables).
 
-The search is case-insensitive and matches any entry whose title, domain or username contains the text.
+The search is case-insensitive and matches any entry whose title, domain or username contains each word of the text,
+so `psw acme pass` finds "Acme Keystore Passphrase".
 
 Results are ordered by:
 
