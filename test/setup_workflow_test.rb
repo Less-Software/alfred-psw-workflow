@@ -257,6 +257,14 @@ class SetupWorkflowTest < Minitest::Test
     assert_includes File.read(agent), '900'
   end
 
+  def test_alfred_apw_auth_agent_failure_keeps_the_cache
+    FileUtils.mkdir_p(File.dirname(agent))
+    File.chmod(0o555, File.dirname(agent)) # e.g. ~/Library/LaunchAgents left owned by root
+    write_csv
+    assert_equal [['Cache updated: 2 items', 'Apple Passwords']], notifications_from(@csv)
+    assert_match(/Couldn't install the apw auth LaunchAgent/, @err)
+  end
+
   def test_alfred_apw_launch_script_unchecked
     notifications_from(launch_script: '0')
     refute File.exist?(agent)

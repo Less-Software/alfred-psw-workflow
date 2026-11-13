@@ -29,7 +29,11 @@ def fail!(message)
   exit(ENV['alfred_version'] ? 0 : 1) # Alfred may not run the notification after a failed script
 end
 
-generate_launch_agent if ENV['alfred_version']
+begin
+  generate_launch_agent if ENV['alfred_version']
+rescue => e # the agent is optional: it must never block the cache
+  STDERR.puts "Couldn't install the apw auth LaunchAgent: #{e.message}"
+end
 
 csv_arg = ARGV[0].to_s
 
