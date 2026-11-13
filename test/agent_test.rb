@@ -8,8 +8,9 @@ class AgentTest < Minitest::Test
   parallelize_me! # each test uses its own temp dir
 
   # Fakes prepended to PATH, logging their calls to $FAKE_DIR/calls. apw: `pw list` exits LIST_STATUS (9: not
-  # authenticated) and `auth request` exits REQUEST_STATUS. Dialogs add their text to $FAKE_DIR/dialogs, and the
-  # PIN one answers PIN, or is canceled when it is empty. pgrep lists PROCESSES; sleep returns at once.
+  # authenticated), `auth request` exits REQUEST_STATUS, and PIN 111111 is wrong. Dialogs add their text to
+  # $FAKE_DIR/dialogs; the Nth one answers the Nth line of PIN, or is canceled when there is none.
+  # pgrep lists PROCESSES; sleep returns at once.
   FAKES = {
     'brew' => %(echo "$FAKE_DIR"),
     'ruby' => %(echo "ruby ${1##*/}" >> "$FAKE_DIR/calls"),
@@ -18,11 +19,13 @@ class AgentTest < Minitest::Test
       case "$*" in
         'pw list'*) exit "$LIST_STATUS" ;;
         'auth request') exit "${REQUEST_STATUS:-0}" ;;
+        'auth response --pin 111111') exit 9 ;;
       esac
     SH
     'osascript' => <<~'SH',
       echo dialog >> "$FAKE_DIR/calls"; echo "${@: -1}" >> "$FAKE_DIR/dialogs"
-      [ -n "$PIN" ] || exit 1; echo "$PIN"
+      pin=$(printf '%s\n' "$PIN" | sed -n "$(grep -c dialog "$FAKE_DIR/calls")p")
+      [ -n "$pin" ] || exit 1; echo "$pin"
     SH
     'pgrep' => %(printf '%s' "$PROCESSES"),
     'sleep' => 'exit 0',
@@ -74,6 +77,14 @@ class AgentTest < Minitest::Test
   def test_not_authenticated
     assert_equal [UPDATE, 'apw pw list example.invalid', 'apw auth request', 'dialog', 'apw auth response --pin 123456'],
       run_script(list_status: 9, pin: " 123456\n")
+  end
+
+  def test_wrong_pin_asks_again_with_a_new_pin
+    assert_equal [UPDATE, 'apw pw list example.invalid',
+                  'apw auth request', 'dialog', 'apw auth response --pin 111111',
+                  'apw auth request', 'dialog', 'apw auth response --pin 123456'],
+      run_script(list_status: 9, pin: "111111\n123456")
+    assert_match(/\AWrong PIN/, File.readlines(File.join(@dir, 'dialogs')).last)
   end
 
   def test_daemon_not_answering # not running, or still starting (at login): retried for 30 seconds
