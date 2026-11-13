@@ -8,15 +8,16 @@
 
 APW="$(brew --prefix apw)/bin/apw"
 
-# Status 9: apw is not running or not authenticated. Any other status (results or none) means it is.
-"$APW" pw list example.invalid >/dev/null 2>&1
-[ $? -eq 9 ] || exit 0
-
-# Makes Apple Passwords show a new PIN. The daemon may still be starting (at login): retry for 30 seconds, then
-# tell the user how to (re)start it, at each run until it answers.
-request_pin() {
+# apw answers {"error":"unpaired",…} when the daemon runs but isn't authenticated, and {"results":[…],…} when it is.
+# Any other answer: the daemon isn't running, or is still starting (at login). Retry for 30 seconds, then tell
+# the user how to (re)start it, at each run until it answers.
+wait_for_daemon() {
   for _ in 1 2 3 4 5 6; do
-    "$APW" auth request >/dev/null && return
+    case $("$APW" pw list example.invalid 2>&1) in
+      *'"error":"unpaired"'*) return ;;
+      *'"error"'*) ;; # errors include "results" too
+      *'"results"'*) exit 0 ;; # authenticated
+    esac
     sleep 5
   done
   osascript -e 'on run {message}' -e 'activate' \
@@ -29,12 +30,14 @@ Restart it in Terminal:
 
 • Homebrew install: brew services restart apw
 • Custom install: apw start" >/dev/null
-  return 1
+  exit 0
 }
+wait_for_daemon
 
 prompt="Enter the PIN shown by Apple Passwords to authenticate apw:"
-# launchd won't start another run while this one waits
-while request_pin; do
+# launchd won't start another run while this one waits. auth request makes Apple Passwords show a new PIN:
+# when it fails, the next run tries again.
+while "$APW" auth request >/dev/null; do
   pin=$(osascript -e 'on run {prompt}' -e 'activate' \
     -e 'text returned of (display dialog prompt default answer "" with title "Passwords.app Workflow")' \
     -e 'end run' "$prompt") || exit 0 # canceled: ask again at the next run
