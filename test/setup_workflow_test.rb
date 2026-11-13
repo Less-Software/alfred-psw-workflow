@@ -7,7 +7,7 @@ require 'fileutils'
 
 ROOT = File.expand_path('../src', __dir__)
 
-class SetupCacheTest < Minitest::Test
+class SetupWorkflowTest < Minitest::Test
   parallelize_me! # each test uses its own temp dir or pasteboard, so they can share the process
 
   def setup
@@ -34,7 +34,7 @@ class SetupCacheTest < Minitest::Test
 
   def test_round_trip
     write_csv
-    out, err, st = run_script('setup_cache.rb', @csv)
+    out, err, st = run_script('setup_workflow.rb', @csv)
     assert st.success?, err
     assert_match(/2 items processed/, out) # the empty row is skipped
     refute File.exist?(@csv)               # input CSV is deleted
@@ -49,7 +49,7 @@ class SetupCacheTest < Minitest::Test
       Title,URL,Username,Password,Notes,OTPAuth
       Café Crème ☕,https://example.com/,zoë@例え.jp,pw,,
     CSV
-    _, err, st = run_script('setup_cache.rb', @csv)
+    _, err, st = run_script('setup_workflow.rb', @csv)
     assert st.success?, err
 
     # No locale set, as Alfred may run scripts: the query must still be read as UTF-8
@@ -64,24 +64,24 @@ class SetupCacheTest < Minitest::Test
 
   def test_seed_reused
     write_csv
-    assert run_script('setup_cache.rb', @csv)[2].success?
+    assert run_script('setup_workflow.rb', @csv)[2].success?
     seed = File.read(@seed)
 
     write_csv
-    out, err, st = run_script('setup_cache.rb', @csv)
+    out, err, st = run_script('setup_workflow.rb', @csv)
     assert st.success?, err
     refute_match(/Generated new seed/, out)
     assert_equal seed, File.read(@seed)
   end
 
   def test_missing_argument
-    _, err, st = run_script('setup_cache.rb')
+    _, err, st = run_script('setup_workflow.rb')
     assert_equal 1, st.exitstatus
     assert_match(/Usage/, err)
   end
 
   def test_missing_csv
-    _, err, st = run_script('setup_cache.rb', @csv)
+    _, err, st = run_script('setup_workflow.rb', @csv)
     assert_equal 1, st.exitstatus
     assert_match(/CSV file not found/, err)
     refute File.exist?(@cache)
@@ -89,7 +89,7 @@ class SetupCacheTest < Minitest::Test
 
   def test_malformed_csv
     File.write(@csv, "Title,URL,Username,Password\n\"unclosed,x\n")
-    _, err, st = run_script('setup_cache.rb', @csv)
+    _, err, st = run_script('setup_workflow.rb', @csv)
     assert_equal 1, st.exitstatus
     assert_match(/unable to parse/, err)
     refute File.exist?(@csv)   # still deleted on failure
@@ -98,7 +98,7 @@ class SetupCacheTest < Minitest::Test
 
   def test_other_csv_left_untouched
     File.write(@csv, "Date,Amount\n2026-01-01,12.50\n") # e.g. a bank export picked by mistake
-    _, err, st = run_script('setup_cache.rb', @csv)
+    _, err, st = run_script('setup_workflow.rb', @csv)
     assert_equal 1, st.exitstatus
     assert_match(/not a Passwords export/, err)
     assert File.exist?(@csv)
@@ -107,7 +107,7 @@ class SetupCacheTest < Minitest::Test
 
   def test_unparsable_url_keeps_raw_host
     File.write(@csv, "Title,URL,Username,Password\nBooks,https://bücher.de/a b,reader,pw\n") # URI rejects both
-    _, err, st = run_script('setup_cache.rb', @csv)
+    _, err, st = run_script('setup_workflow.rb', @csv)
     assert st.success?, err
     out, = run_script('main.rb', 'books')
     assert_equal 'reader|bücher.de', JSON.parse(out)['items'].first['arg']
@@ -115,21 +115,24 @@ class SetupCacheTest < Minitest::Test
 
   def test_failed_write_keeps_previous_cache
     write_csv
-    assert run_script('setup_cache.rb', @csv)[2].success?
+    assert run_script('setup_workflow.rb', @csv)[2].success?
     previous = File.read(@cache)
     FileUtils.mkdir("#{@cache}.tmp") # makes the next write fail
     write_csv
-    refute run_script('setup_cache.rb', @csv)[2].success?
+    refute run_script('setup_workflow.rb', @csv)[2].success?
     assert_equal previous, File.read(@cache)
   end
 
-  # Runs setup_cache.rb with a fake osascript (the file picker) first on PATH; returns the notifications printed
-  # for Alfred's Post Notification as [message, title]. The fake picker answers `picked`, or cancels when it is nil.
-  # Sets @status, @err and @picker_calls.
-  def notifications_from(*args, alfred: true, picked: nil)
+  # Runs setup_workflow.rb with a fake osascript (the file picker) and launchctl first on PATH; returns the notifications
+  # printed for Alfred's Post Notification as [message, title]. The fake picker answers `picked`, or cancels when it
+  # is nil. The fake `launchctl print` finds the agent loaded unless `loaded` is false, and isn't logged.
+  # Sets @status, @err, @picker_calls and @launchctl_calls.
+  def notifications_from(*args, alfred: true, picked: nil, launch_script: '1', launches_chrome: nil, loaded: true)
     bin = File.join(@home, 'bin')
     picker_log = File.join(@home, 'picker_calls')
+    launchctl_log = File.join(@home, 'launchctl_calls')
     FileUtils.mkdir_p(bin)
+    FileUtils.rm_f([picker_log, launchctl_log]) # calls of this run only
     File.write(File.join(bin, 'osascript'), <<~SH)
       #!/bin/bash
       case "$*" in
@@ -137,13 +140,24 @@ class SetupCacheTest < Minitest::Test
       esac
       echo "unexpected osascript call: $*" >&2; exit 1
     SH
-    File.chmod(0o755, File.join(bin, 'osascript'))
+    # Never the real launchctl: it would load the agent into this session
+    File.write(File.join(bin, 'launchctl'), <<~SH)
+      #!/bin/bash
+      [ "$1" = print ] && exit "$PRINT_STATUS"
+      printf '%s\\n' "$*" >> "#{launchctl_log}"
+    SH
+    %w[osascript launchctl].each { File.chmod(0o755, File.join(bin, _1)) }
     env = {
-      'PATH' => "#{bin}:#{ENV['PATH']}", 'alfred_version' => (alfred ? '5.5' : nil),
-      'PICKED' => picked
+      'PATH' => "#{bin}:#{ENV['PATH']}",
+      'alfred_version' => (alfred ? '5.5' : nil),
+      'PICKED' => picked,
+      'APW_LAUNCH_SCRIPT' => launch_script,
+      'AGENT_LAUNCHES_CHROME' => launches_chrome,
+      'PRINT_STATUS' => (loaded ? '0' : '113') # 113: launchctl's "could not find service"
     }
-    out, @err, @status = run_script('setup_cache.rb', *args, env: env)
+    out, @err, @status = run_script('setup_workflow.rb', *args, env: env)
     @picker_calls = File.exist?(picker_log) ? File.readlines(picker_log, chomp: true) : []
+    @launchctl_calls = File.exist?(launchctl_log) ? File.readlines(launchctl_log, chomp: true) : []
     return out.lines.grep(/alfredworkflow/) unless alfred # Terminal: plain progress output only
     # Alfred reads the whole stdout as one JSON object, so nothing else may be printed there
     if out.empty?
@@ -215,5 +229,93 @@ class SetupCacheTest < Minitest::Test
   def test_terminal_does_not_notify
     write_csv
     assert_empty notifications_from(@csv, alfred: false)
+  end
+
+  def agent = File.join(@home, 'Library/LaunchAgents/sh.less-software.psw-workflow.apw-auth.plist')
+
+  def test_alfred_installs_apw_auth_agent_once
+    notifications_from # even when the picker is canceled
+    assert_equal ["bootstrap gui/#{Process.uid} #{agent}"], @launchctl_calls
+    assert system('plutil', '-lint', '-s', agent), File.read(agent)
+    assert_includes File.read(agent), File.join(ROOT, 'launch_agent/agent_script.sh')
+
+    notifications_from
+    assert_empty @launchctl_calls # already installed
+  end
+
+  def test_apw_auth_agent_uninstalls_itself_with_the_workflow
+    notifications_from
+    args = JSON.parse(IO.popen(['plutil', '-extract', 'ProgramArguments', 'json', '-o', '-', agent], &:read))
+    assert_equal File.join(ROOT, 'launch_agent/agent_script.sh'), args[3]
+    # Never runs the real agent_script.sh
+    args[3] = File.join(@home, 'deleted-workflow/src/launch_agent/agent_script.sh')
+    _, err, st = Open3.capture3({ 'PATH' => "#{@home}/bin:#{ENV['PATH']}" }, *args)
+    assert st.success?, err
+    refute File.exist?(agent)
+    assert_equal "bootout gui/#{Process.uid}/sh.less-software.psw-workflow.apw-auth",
+      File.readlines(File.join(@home, 'launchctl_calls'), chomp: true).last
+  end
+
+  def test_alfred_reinstalls_changed_apw_auth_agent
+    notifications_from
+    File.write(agent, File.read(agent).sub('900', '60'))
+    notifications_from
+    assert_equal ["bootout gui/#{Process.uid}/sh.less-software.psw-workflow.apw-auth", "bootstrap gui/#{Process.uid} #{agent}"], @launchctl_calls
+    assert_includes File.read(agent), '900'
+  end
+
+  def test_alfred_reloads_unloaded_apw_auth_agent # for example after a manual bootout
+    notifications_from
+    notifications_from(loaded: false)
+    assert_equal ["bootout gui/#{Process.uid}/sh.less-software.psw-workflow.apw-auth",
+                  "bootstrap gui/#{Process.uid} #{agent}"], @launchctl_calls
+  end
+
+  def test_alfred_apw_auth_agent_failure_keeps_the_cache
+    FileUtils.mkdir_p(File.dirname(agent))
+    File.chmod(0o555, File.dirname(agent)) # e.g. ~/Library/LaunchAgents left owned by root
+    write_csv
+    assert_equal [['Cache updated: 2 items', 'Apple Passwords']], notifications_from(@csv)
+    assert_match(/Couldn't install the apw auth LaunchAgent/, @err)
+  end
+
+  def test_agent_launches_chrome_written_to_the_agent
+    chrome = -> { IO.popen(%W[plutil -extract EnvironmentVariables.AGENT_LAUNCHES_CHROME raw #{agent}], &:read) }
+    notifications_from
+    assert_equal "1\n", chrome.call # checked by default
+    notifications_from(launches_chrome: '0')
+    assert_equal "0\n", chrome.call
+  end
+
+  def test_alfred_apw_launch_script_unchecked
+    notifications_from(launch_script: '0')
+    refute File.exist?(agent)
+    assert_empty @launchctl_calls
+
+    notifications_from
+    notifications_from(launch_script: '0') # removes an installed agent
+    refute File.exist?(agent)
+    assert_equal ["bootout gui/#{Process.uid}/sh.less-software.psw-workflow.apw-auth"], @launchctl_calls
+  end
+
+  # As agent_script.sh does, without a locale or the workflow's variables
+  def test_generate_launch_agent_run_directly
+    notifications_from(launch_script: '0') # only creates the fake launchctl
+    env = {
+      'HOME' => @home,
+      'PATH' => "#{@home}/bin:#{ENV['PATH']}",
+      'LANG' => nil,
+      'LC_ALL' => nil,
+      'LC_CTYPE' => nil
+    }
+    _, err, st = Open3.capture3(env, RbConfig.ruby, File.join(ROOT, 'launch_agent/generate.rb'))
+    assert st.success?, err
+    assert system('plutil', '-lint', '-s', agent), File.read(agent)
+    assert_equal ["bootstrap gui/#{Process.uid} #{agent}"], File.readlines(File.join(@home, 'launchctl_calls'), chomp: true)
+  end
+
+  def test_terminal_does_not_install_apw_auth_agent
+    notifications_from(alfred: false)
+    refute File.exist?(agent)
   end
 end

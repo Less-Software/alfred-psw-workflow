@@ -34,7 +34,7 @@ class AlfredQuery
   def format_item(item)
     title, domain, username = item.values_at('title', 'domain', 'username')
 
-    # setup_cache.rb stores stripped strings, so empty? is enough
+    # setup_workflow.rb stores stripped strings, so empty? is enough
     display_title = [title, domain, username].find { !_1.empty? }
 
     subtitle = [

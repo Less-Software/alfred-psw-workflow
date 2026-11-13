@@ -11,6 +11,7 @@ require 'fileutils'
 require 'securerandom'
 require 'uri'
 require_relative 'cache_key'
+require_relative 'launch_agent/generate'
 
 # In Alfred, stdout goes to the Post Notification output (which shows the workflow icon), so it must hold
 # only that message: progress lines go to stderr, shown in Alfred's debugger. Terminal keeps both streams.
@@ -28,9 +29,15 @@ def fail!(message)
   exit(ENV['alfred_version'] ? 0 : 1) # Alfred may not run the notification after a failed script
 end
 
+begin
+  generate_launch_agent if ENV['alfred_version']
+rescue => e # the agent is optional: it must never block the cache
+  STDERR.puts "Couldn't install the apw auth LaunchAgent: #{e.message}"
+end
+
 csv_arg = ARGV[0].to_s
 
-# The pswsync keyword passes no file: ask for one with a file picker
+# The pswsetup keyword passes no file: ask for one with a file picker
 if csv_arg.empty? && ENV['alfred_version']
   # activate brings osascript's dialog in front of other windows
   csv_arg = IO.popen(['osascript', '-e', 'activate', '-e', 'POSIX path of (choose file with prompt ' \

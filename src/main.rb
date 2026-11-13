@@ -21,8 +21,8 @@ if query.length < 4
 end
 
 unless File.exist?(SEED_PATH) && File.exist?(CACHE_PATH)
-  AlfredOutput.render_error("Seed or Cache missing. Please run sync.",
-    "Type pswsync in Alfred and select your Passwords CSV export")
+  AlfredOutput.render_error("Seed or Cache missing. Please run pswsetup.",
+    "Type pswsetup in Alfred and select your Passwords CSV export")
   exit 0
 end
 

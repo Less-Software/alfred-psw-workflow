@@ -29,7 +29,7 @@ class MainTest < Minitest::Test
       GitHub,https://github.com/login,octo,secret,,
       Work Mail,https://mail.example.com/,github-bot,pw,,
     CSV
-    _, err, st = run_script('setup_cache.rb', csv)
+    _, err, st = run_script('setup_workflow.rb', csv)
     assert st.success?, err
   end
 
@@ -48,8 +48,8 @@ class MainTest < Minitest::Test
 
   def test_missing_cache
     items = search('github')
-    assert_equal 'Seed or Cache missing. Please run sync.', items[0]['title']
-    assert_match(/pswsync/, items[0]['subtitle'])
+    assert_equal 'Seed or Cache missing. Please run pswsetup.', items[0]['title']
+    assert_match(/pswsetup/, items[0]['subtitle'])
   end
 
   def test_corrupt_cache
