@@ -6,12 +6,29 @@
 	<key>Label</key>
 	<string>%{label}</string>
 	<!-- Deleting the workflow deletes agent_script.sh: the agent then deletes its plist and unloads itself.
+	     Exit code 126: macOS privacy protection refused to read agent_script.sh, so say why nothing happens.
 	     Arguments: $0 agent_script.sh, $1 this plist, $2 the label -->
 	<key>ProgramArguments</key>
 	<array>
 		<string>/bin/bash</string>
 		<string>-c</string>
-		<string>if [ -f "$0" ]; then exec /bin/bash "$0"; fi; rm -f "$1"; launchctl bootout "gui/$(id -u)/$2"</string>
+		<string>
+			if [ ! -f "$0" ]; then
+				rm -f "$1"
+				launchctl bootout "gui/$(id -u)/$2"
+				exit 0
+			fi
+
+			/bin/bash "$0"
+			[ $? -eq 126 ] || exit 0
+
+			message="macOS blocks the apw agent from reading the workflow folder. Move Alfred's preferences"
+			message+=" out of Documents, Desktop or a cloud folder, or uncheck APW Launch Script and run pswsetup."
+			osascript -e 'on run {message}' \
+				-e 'display dialog message with title "Passwords.app Workflow" ¬
+					buttons {"OK"} default button "OK" with icon caution' \
+				-e 'end run' "$message" >/dev/null
+		</string>
 		<string>%{script}</string>
 		<string>%{plist}</string>
 		<string>%{label}</string>

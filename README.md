@@ -76,11 +76,12 @@ The cache is now ready and Passwords.csv has been deleted: you can start using `
 
 `pswsetup` also installs a LaunchAgent (`~/Library/LaunchAgents/sh.less-software.psw-workflow.apw-auth.plist`)
 that runs `src/launch_agent/agent_script.sh` at login and every 15 minutes. It opens Google Chrome if it isn't
-running and, when apw isn't authenticated, asks for the PIN shown by Apple Passwords. To opt out, uncheck "APW
-Launch Script" in the [Workflow's Configuration](#configuration-variables) and run `pswsetup` again: it
-removes the LaunchAgent. Deleting the workflow is enough too: at its next run, the LaunchAgent finds
-`src/launch_agent/agent_script.sh` gone and removes itself. Workflow updates need no `pswsetup`: each run
-brings the LaunchAgent up to date first.
+running and, when apw isn't authenticated, asks for the PIN shown by Apple Passwords. macOS doesn't let it
+read the workflow if Alfred's preferences are in Documents, Desktop or a cloud folder: the agent then says so
+in a dialog. To opt out, uncheck "APW Launch Script" in the [Workflow's
+Configuration](#configuration-variables) and run `pswsetup` again: it removes the LaunchAgent. Deleting the
+workflow is enough too: at its next run, the LaunchAgent finds `src/launch_agent/agent_script.sh` gone and
+removes itself. Workflow updates need no `pswsetup`: each run brings the LaunchAgent up to date first.
 
 <br>
 <div align="center">
@@ -104,6 +105,7 @@ The following variables are configurable via Alfred:
 | Message | Fix |
 |---------|-----|
 | `The apw daemon isn't running or isn't responding…` (dialog) | Restart the daemon in Terminal: `brew services restart apw` (Homebrew install) or `apw start` (custom install). The dialog comes back every 15 minutes until it answers. |
+| `macOS blocks the apw agent from reading the workflow folder…` (dialog) | Move Alfred's preferences out of Documents, Desktop or a cloud folder (Alfred Preferences → Advanced → Syncing), or uncheck "APW Launch Script" and run `pswsetup`. |
 | `apw execution failed or canceled` | Touch ID was canceled, or the apw daemon isn't running or paired: start it and run `apw auth` again (needed after every reboot; the APW Launch Script asks for the PIN within 15 minutes). |
 | `No Password found for this username` | apw found no password for this account, for example because it was deleted or renamed since the last sync: run `pswsetup`. |
 | `No OTP found for this username` | The entry has no verification code in Passwords. |
@@ -177,8 +179,8 @@ Fills `src/launch_agent/sh.less-software.psw-workflow.apw-auth.plist.tpl` with t
 `src/launch_agent/agent_script.sh` and the plist, and the current `$PATH` (launchd's lacks Homebrew). It
 writes the result to `~/Library/LaunchAgents/` and reloads the agent when the result differs from the
 installed plist or launchd hasn't loaded it, or removes the agent when `APW_LAUNCH_SCRIPT` is `0`.
-`setup_workflow.rb` calls it, and `agent_script.sh` runs it directly:
-`$(brew --prefix ruby)/bin/ruby src/launch_agent/generate.rb`.
+`setup_workflow.rb` calls it, and `agent_script.sh` runs it directly. Don't run it from a checkout in
+Documents or Desktop: the agent would point at that checkout, which macOS doesn't let it read.
 
 ### `src/launch_agent/agent_script.sh`: apw authentication (LaunchAgent)
 
