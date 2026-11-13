@@ -10,7 +10,7 @@ class AgentTest < Minitest::Test
   # Fakes prepended to PATH, logging their calls to $FAKE_DIR/calls. apw: `pw list` exits LIST_STATUS (9: not
   # authenticated), `auth request` exits REQUEST_STATUS, and PIN 111111 is wrong. Dialogs add their text to
   # $FAKE_DIR/dialogs; the Nth one answers the Nth line of PIN, or is canceled when there is none.
-  # pgrep lists PROCESSES; sleep returns at once.
+  # sleep returns at once.
   FAKES = {
     'brew' => %(echo "$FAKE_DIR"),
     'ruby' => %(echo "ruby ${1##*/}" >> "$FAKE_DIR/calls"),
@@ -27,9 +27,7 @@ class AgentTest < Minitest::Test
       pin=$(printf '%s\n' "$PIN" | sed -n "$(grep -c dialog "$FAKE_DIR/calls")p")
       [ -n "$pin" ] || exit 1; echo "$pin"
     SH
-    'pgrep' => %(printf '%s' "$PROCESSES"),
-    'sleep' => 'exit 0',
-    'open' => %(echo "open $*" >> "$FAKE_DIR/calls")
+    'sleep' => 'exit 0'
   }.freeze
 
   def setup
@@ -43,26 +41,14 @@ class AgentTest < Minitest::Test
 
   def teardown = FileUtils.rm_rf(@dir)
 
-  CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
-  USER_CHROME = "101 #{CHROME}\n"
-  # apw's headless Chrome, as `pgrep -lf "Google Chrome.app"` lists it
-  APW_CHROME = <<~PS
-    201 #{CHROME} --user-data-dir=/Users/me/.apw/browser/chrome --headless=new
-    202 /Applications/Google Chrome.app/Contents/Frameworks/Helpers/chrome_crashpad_handler --database=/Users/me/Library/Application Support/Google/Chrome/Crashpad
-    203 /Applications/Google Chrome.app/Contents/Frameworks/Helpers/Google Chrome Helper --type=renderer --user-data-dir=/Users/me/.apw/browser/chrome
-  PS
-
   # Returns the fakes' calls
-  def run_script(list_status:, pin: '', processes: USER_CHROME + APW_CHROME, request_status: 0,
-                 launches_chrome: nil)
+  def run_script(list_status:, pin: '', request_status: 0)
     env = {
       'PATH' => "#{@dir}/bin:#{ENV['PATH']}",
       'FAKE_DIR' => @dir,
       'LIST_STATUS' => list_status.to_s,
       'REQUEST_STATUS' => request_status.to_s,
-      'PIN' => pin,
-      'PROCESSES' => processes,
-      'AGENT_LAUNCHES_CHROME' => launches_chrome
+      'PIN' => pin
     }
     FileUtils.rm_f(%w[calls dialogs].map { File.join(@dir, _1) }) # this run only
     _, err, st = Open3.capture3(env, File.expand_path('../src/launch_agent/agent_script.sh', __dir__))
@@ -99,15 +85,5 @@ class AgentTest < Minitest::Test
 
   def test_dialog_canceled
     assert_equal [UPDATE, 'apw pw list example.invalid', 'apw auth request', 'dialog'], run_script(list_status: 9)
-  end
-
-  def test_opens_chrome_when_only_apw_chrome_runs
-    assert_equal 'open -n -g -a Google Chrome', run_script(list_status: 3, processes: APW_CHROME)[1]
-    assert_equal 'open -n -g -a Google Chrome', run_script(list_status: 3, processes: '')[1]
-  end
-
-  def test_chrome_setting_unchecked
-    assert_equal [UPDATE, 'apw pw list example.invalid'],
-      run_script(list_status: 3, processes: '', launches_chrome: '0')
   end
 end

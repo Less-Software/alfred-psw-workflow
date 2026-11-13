@@ -127,7 +127,7 @@ class SetupWorkflowTest < Minitest::Test
   # printed for Alfred's Post Notification as [message, title]. The fake picker answers `picked`, or cancels when it
   # is nil. The fake `launchctl print` finds the agent loaded unless `loaded` is false, and isn't logged.
   # Sets @status, @err, @picker_calls and @launchctl_calls.
-  def notifications_from(*args, alfred: true, picked: nil, launch_script: '1', launches_chrome: nil, loaded: true)
+  def notifications_from(*args, alfred: true, picked: nil, launch_script: '1', loaded: true)
     bin = File.join(@home, 'bin')
     picker_log = File.join(@home, 'picker_calls')
     launchctl_log = File.join(@home, 'launchctl_calls')
@@ -152,7 +152,6 @@ class SetupWorkflowTest < Minitest::Test
       'alfred_version' => (alfred ? '5.5' : nil),
       'PICKED' => picked,
       'APW_LAUNCH_SCRIPT' => launch_script,
-      'AGENT_LAUNCHES_CHROME' => launches_chrome,
       'PRINT_STATUS' => (loaded ? '0' : '113') # 113: launchctl's "could not find service"
     }
     out, @err, @status = run_script('setup_workflow.rb', *args, env: env)
@@ -277,14 +276,6 @@ class SetupWorkflowTest < Minitest::Test
     write_csv
     assert_equal [['Cache updated: 2 items', 'Apple Passwords']], notifications_from(@csv)
     assert_match(/Couldn't install the apw auth LaunchAgent/, @err)
-  end
-
-  def test_agent_launches_chrome_written_to_the_agent
-    chrome = -> { IO.popen(%W[plutil -extract EnvironmentVariables.AGENT_LAUNCHES_CHROME raw #{agent}], &:read) }
-    notifications_from
-    assert_equal "1\n", chrome.call # checked by default
-    notifications_from(launches_chrome: '0')
-    assert_equal "0\n", chrome.call
   end
 
   def test_alfred_apw_launch_script_unchecked

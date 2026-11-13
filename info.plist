@@ -384,32 +384,13 @@ and require authentication before being copied (via main password or Touch ID).<
 				<string>Keep apw authenticated</string>
 			</dict>
 			<key>description</key>
-			<string>pswsetup installs a launch agent that runs at login and every 15 minutes: it opens Google Chrome if needed and, when apw isn't authenticated, asks for the PIN shown by Apple Passwords. Uncheck it and run pswsetup to remove the agent.</string>
+			<string>pswsetup installs a launch agent that runs at login and every 15 minutes: when apw isn't authenticated, it asks for the PIN shown by Apple Passwords. Uncheck it and run pswsetup to remove the agent.</string>
 			<key>label</key>
 			<string>APW Launch Agent</string>
 			<key>type</key>
 			<string>checkbox</string>
 			<key>variable</key>
 			<string>APW_LAUNCH_SCRIPT</string>
-		</dict>
-		<dict>
-			<key>config</key>
-			<dict>
-				<key>default</key>
-				<true/>
-				<key>required</key>
-				<false/>
-				<key>text</key>
-				<string>Open Google Chrome when it isn't running</string>
-			</dict>
-			<key>description</key>
-			<string>The APW Launch Agent opens Google Chrome at login and every 15 minutes if it isn't running. Run pswsetup after changing it.</string>
-			<key>label</key>
-			<string>Agent Launches Chrome</string>
-			<key>type</key>
-			<string>checkbox</string>
-			<key>variable</key>
-			<string>AGENT_LAUNCHES_CHROME</string>
 		</dict>
 	</array>
 	<key>variablesdontexport</key>
