@@ -11,6 +11,7 @@ require 'fileutils'
 require 'securerandom'
 require 'uri'
 require_relative 'cache_key'
+require_relative 'generate_launch_agent'
 
 # In Alfred, stdout goes to the Post Notification output (which shows the workflow icon), so it must hold
 # only that message: progress lines go to stderr, shown in Alfred's debugger. Terminal keeps both streams.
@@ -27,6 +28,8 @@ def fail!(message)
   notify(message, 'Error')
   exit(ENV['alfred_version'] ? 0 : 1) # Alfred may not run the notification after a failed script
 end
+
+generate_launch_agent if ENV['alfred_version']
 
 csv_arg = ARGV[0].to_s
 

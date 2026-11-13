@@ -123,13 +123,15 @@ class SetupWorkflowTest < Minitest::Test
     assert_equal previous, File.read(@cache)
   end
 
-  # Runs setup_workflow.rb with a fake osascript (the file picker) first on PATH; returns the notifications printed
-  # for Alfred's Post Notification as [message, title]. The fake picker answers `picked`, or cancels when it is nil.
-  # Sets @status, @err and @picker_calls.
-  def notifications_from(*args, alfred: true, picked: nil)
+  # Runs setup_workflow.rb with a fake osascript (the file picker) and launchctl first on PATH; returns the notifications
+  # printed for Alfred's Post Notification as [message, title]. The fake picker answers `picked`, or cancels when it
+  # is nil. Sets @status, @err, @picker_calls and @launchctl_calls.
+  def notifications_from(*args, alfred: true, picked: nil, launch_script: '1')
     bin = File.join(@home, 'bin')
     picker_log = File.join(@home, 'picker_calls')
+    launchctl_log = File.join(@home, 'launchctl_calls')
     FileUtils.mkdir_p(bin)
+    FileUtils.rm_f([picker_log, launchctl_log]) # calls of this run only
     File.write(File.join(bin, 'osascript'), <<~SH)
       #!/bin/bash
       case "$*" in
@@ -137,13 +139,16 @@ class SetupWorkflowTest < Minitest::Test
       esac
       echo "unexpected osascript call: $*" >&2; exit 1
     SH
-    File.chmod(0o755, File.join(bin, 'osascript'))
+    # Never the real launchctl: it would load the agent into this session
+    File.write(File.join(bin, 'launchctl'), %(#!/bin/bash\nprintf '%s\\n' "$*" >> "#{launchctl_log}"\n))
+    %w[osascript launchctl].each { File.chmod(0o755, File.join(bin, _1)) }
     env = {
       'PATH' => "#{bin}:#{ENV['PATH']}", 'alfred_version' => (alfred ? '5.5' : nil),
-      'PICKED' => picked
+      'PICKED' => picked, 'APW_LAUNCH_SCRIPT' => launch_script
     }
     out, @err, @status = run_script('setup_workflow.rb', *args, env: env)
     @picker_calls = File.exist?(picker_log) ? File.readlines(picker_log, chomp: true) : []
+    @launchctl_calls = File.exist?(launchctl_log) ? File.readlines(launchctl_log, chomp: true) : []
     return out.lines.grep(/alfredworkflow/) unless alfred # Terminal: plain progress output only
     # Alfred reads the whole stdout as one JSON object, so nothing else may be printed there
     if out.empty?
@@ -215,5 +220,62 @@ class SetupWorkflowTest < Minitest::Test
   def test_terminal_does_not_notify
     write_csv
     assert_empty notifications_from(@csv, alfred: false)
+  end
+
+  def agent = File.join(@home, 'Library/LaunchAgents/sh.less-software.psw-workflow.apw-auth.plist')
+
+  def test_alfred_installs_apw_auth_agent_once
+    notifications_from # even when the picker is canceled
+    assert_equal ["bootstrap gui/#{Process.uid} #{agent}"], @launchctl_calls
+    assert system('plutil', '-lint', '-s', agent), File.read(agent)
+    assert_includes File.read(agent), File.join(ROOT, 'agent.sh')
+
+    notifications_from
+    assert_empty @launchctl_calls # already installed
+  end
+
+  def test_apw_auth_agent_uninstalls_itself_with_the_workflow
+    notifications_from
+    args = JSON.parse(IO.popen(['plutil', '-extract', 'ProgramArguments', 'json', '-o', '-', agent], &:read))
+    assert_equal File.join(ROOT, 'agent.sh'), args[3]
+    args[3] = File.join(@home, 'deleted-workflow/src/agent.sh') # never runs the real agent.sh
+    _, err, st = Open3.capture3({ 'PATH' => "#{@home}/bin:#{ENV['PATH']}" }, *args)
+    assert st.success?, err
+    refute File.exist?(agent)
+    assert_equal "bootout gui/#{Process.uid}/sh.less-software.psw-workflow.apw-auth",
+      File.readlines(File.join(@home, 'launchctl_calls'), chomp: true).last
+  end
+
+  def test_alfred_reinstalls_changed_apw_auth_agent
+    notifications_from
+    File.write(agent, File.read(agent).sub('900', '60'))
+    notifications_from
+    assert_equal ["bootout gui/#{Process.uid}/sh.less-software.psw-workflow.apw-auth", "bootstrap gui/#{Process.uid} #{agent}"], @launchctl_calls
+    assert_includes File.read(agent), '900'
+  end
+
+  def test_alfred_apw_launch_script_unchecked
+    notifications_from(launch_script: '0')
+    refute File.exist?(agent)
+    assert_empty @launchctl_calls
+
+    notifications_from
+    notifications_from(launch_script: '0') # removes an installed agent
+    refute File.exist?(agent)
+    assert_equal ["bootout gui/#{Process.uid}/sh.less-software.psw-workflow.apw-auth"], @launchctl_calls
+  end
+
+  def test_generate_launch_agent_run_directly # as agent.sh does, without a locale or the workflow's variables
+    notifications_from(launch_script: '0') # only creates the fake launchctl
+    env = { 'HOME' => @home, 'PATH' => "#{@home}/bin:#{ENV['PATH']}", 'LANG' => nil, 'LC_ALL' => nil, 'LC_CTYPE' => nil }
+    _, err, st = Open3.capture3(env, RbConfig.ruby, File.join(ROOT, 'generate_launch_agent.rb'))
+    assert st.success?, err
+    assert system('plutil', '-lint', '-s', agent), File.read(agent)
+    assert_equal ["bootstrap gui/#{Process.uid} #{agent}"], File.readlines(File.join(@home, 'launchctl_calls'), chomp: true)
+  end
+
+  def test_terminal_does_not_install_apw_auth_agent
+    notifications_from(alfred: false)
+    refute File.exist?(agent)
   end
 end

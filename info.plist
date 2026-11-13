@@ -222,7 +222,7 @@
 				<key>subtext</key>
 				<string>Select exported Passwords.csv from Password.app</string>
 				<key>text</key>
-				<string>Synchronize passwords cache</string>
+				<string>Set up passwords cache and apw authentication</string>
 				<key>withspace</key>
 				<false/>
 			</dict>
@@ -372,6 +372,25 @@ and require authentication before being copied (via main password or Touch ID).<
 			<string>textfield</string>
 			<key>variable</key>
 			<string>KEEP_CLIPBOARD_DELAY</string>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>default</key>
+				<true/>
+				<key>required</key>
+				<false/>
+				<key>text</key>
+				<string>Keep apw authenticated</string>
+			</dict>
+			<key>description</key>
+			<string>pswsetup installs a script that runs at login and every 15 minutes: it opens Google Chrome if needed and, when apw isn't authenticated, asks for the PIN shown by Apple Passwords. Uncheck it and run pswsetup to remove the script.</string>
+			<key>label</key>
+			<string>APW Launch Script</string>
+			<key>type</key>
+			<string>checkbox</string>
+			<key>variable</key>
+			<string>APW_LAUNCH_SCRIPT</string>
 		</dict>
 	</array>
 	<key>variablesdontexport</key>

@@ -55,7 +55,8 @@ brew install jq   # only on macOS < 15; macOS 15+ ships /usr/bin/jq
 
 Then set up apw (a browser with the iCloud Passwords extension, the background daemon, and `apw auth` pairing)
 by following the [apw Getting Started guide](https://github.com/bendews/apw#getting-started).
-`apw auth` must be run again every time the daemon restarts (for example after a reboot).
+`apw auth` must be run again every time the daemon restarts (for example after a reboot):
+`pswsetup` installs a script that does it for you (see below).
 
 The scripts find Homebrew's `ruby`, `apw` and `jq` with `brew --prefix <formula>`, so `brew` must be on
 the `$PATH` Alfred runs scripts with. The Ruby scripts start with a short `/bin/sh` launcher that re-runs
@@ -73,6 +74,13 @@ Run it once to set up, then again whenever you add, rename or delete entries in 
 
 The cache is now ready and Passwords.csv has been deleted: you can start using `psw`.
 
+`pswsetup` also installs a LaunchAgent (`~/Library/LaunchAgents/sh.less-software.psw-workflow.apw-auth.plist`)
+that runs `src/agent.sh` at login and every 15 minutes. It opens Google Chrome if it isn't running and, when apw
+isn't authenticated, asks for the PIN shown by Apple Passwords. To opt out, uncheck "APW Launch Script" in the
+[Workflow's Configuration](#configuration-variables) and run `pswsetup` again: it removes the LaunchAgent.
+Deleting the workflow is enough too: at its next run, the LaunchAgent finds `src/agent.sh` gone and removes
+itself. Workflow updates need no `pswsetup`: each run brings the LaunchAgent up to date first.
+
 <br>
 <div align="center">
   <video src="https://github.com/user-attachments/assets/60db8913-8a09-4522-8edd-1b473578a4ae">
@@ -88,12 +96,13 @@ The following variables are configurable via Alfred:
 | Search Keyword | Keyword to trigger password search | `psw` |
 | Cipher Salt | Salt used during key-derivation process for encryption | `alfred-psw-workflow` |
 | Keep Clipboard Delay | Number of seconds (decimals allowed) to keep password/OTP in secure clipboard | `30` |
+| APW Launch Script | Let `pswsetup` install the script that keeps apw authenticated (unchecked: remove it) | checked |
 
 ## Troubleshooting
 
 | Message | Fix |
 |---------|-----|
-| `apw execution failed or canceled` | Touch ID was canceled, or the apw daemon isn't running or paired: start it and run `apw auth` again (needed after every reboot). |
+| `apw execution failed or canceled` | Touch ID was canceled, or the apw daemon isn't running or paired: start it and run `apw auth` again (needed after every reboot; the APW Launch Script asks for the PIN within 15 minutes). |
 | `No Password found for this username` | apw found no password for this account, for example because it was deleted or renamed since the last sync: run `pswsetup`. |
 | `No OTP found for this username` | The entry has no verification code in Passwords. |
 | `jq not found: brew install jq` | Install jq (macOS < 15 only). |
@@ -151,13 +160,28 @@ Runs on every keystroke with the query as `$1`. Once the query has at least 4 ch
 the cache, keeps the entries whose title, domain or username contains the query, and returns them to Alfred
 as Script Filter JSON. Each result's `arg` is `username|domain`.
 
-### `src/setup_workflow.rb`: cache creation (`pswsetup`)
+### `src/setup_workflow.rb`: workflow setup (`pswsetup`)
 
-Runs when invoked via `pswsetup`: it uses AppleScript to open a file picker where the user selects their
+Runs when invoked via `pswsetup`: it installs, updates or removes the apw auth LaunchAgent (with
+`src/generate_launch_agent.rb`), then uses AppleScript to open a file picker where the user selects their
 Passwords.csv export, then builds the cache from it.
 You can also run it directly: `src/setup_workflow.rb path/to/Passwords.csv`.
 
 Both Ruby scripts derive the cache key with `src/cache_key.rb`.
+
+### `src/generate_launch_agent.rb`: apw auth LaunchAgent
+
+Fills `src/sh.less-software.psw-workflow.apw-auth.plist.tpl` with the paths of `src/agent.sh` and the plist, and the
+current `$PATH` (launchd's lacks Homebrew). It writes the result to `~/Library/LaunchAgents/` and reloads the agent
+when the result differs from the installed plist, or removes the agent when `APW_LAUNCH_SCRIPT` is `0`.
+`setup_workflow.rb` calls it, and `agent.sh` runs it directly: `$(brew --prefix ruby)/bin/ruby src/generate_launch_agent.rb`.
+
+### `src/agent.sh`: apw authentication (LaunchAgent)
+
+Runs `generate_launch_agent.rb` first, so that a workflow update that changes the template updates the installed
+agent: the reload ends this run and starts the new agent. It then opens Google Chrome if it isn't running, then runs `apw pw list example.invalid`: status 9 means apw isn't running
+or authenticated. It then runs `apw auth request`, asks for the PIN in an AppleScript dialog and passes it to
+`apw auth response --pin`, asking again with a new PIN when it's wrong. Canceling the dialog waits for the next run.
 
 ### `src/actions/main.sh`: Alfred action (↩)
 
