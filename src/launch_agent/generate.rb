@@ -41,8 +41,8 @@ def generate_launch_agent
   # Run from agent_script.sh, bootout kills the agent's process group: reload from a group of its own
   # so that bootstrap still runs. The new agent then runs at once (RunAtLoad).
   reload = ''
-  reload << 'launchctl bootout "$0/$2" 2>/dev/null; ' if installed
-  reload << 'launchctl bootstrap "$0" "$1"'
+  reload += 'launchctl bootout "$0/$2" 2>/dev/null; ' if installed
+  reload += 'launchctl bootstrap "$0" "$1"'
 
   Process.wait(spawn('/bin/sh', '-c', reload, "gui/#{Process.uid}", path, label, pgroup: true))
 
