@@ -23,7 +23,7 @@
 			[ $? -eq 126 ] || exit 0
 
 			message="macOS blocks the apw agent from reading the workflow folder. Move Alfred's preferences"
-			message+=" out of Documents, Desktop or a cloud folder, or uncheck APW Launch Script and run pswsetup."
+			message+=" out of Documents, Desktop or a cloud folder, or uncheck APW Launch Agent and run pswsetup."
 			osascript -e 'on run {message}' \
 				-e 'display dialog message with title "Passwords.app Workflow" ¬
 					buttons {"OK"} default button "OK" with icon caution' \

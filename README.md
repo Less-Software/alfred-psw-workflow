@@ -56,7 +56,7 @@ brew install jq   # only on macOS < 15; macOS 15+ ships /usr/bin/jq
 Then set up apw (a browser with the iCloud Passwords extension, the background daemon, and `apw auth` pairing)
 by following the [apw Getting Started guide](https://github.com/bendews/apw#getting-started).
 `apw auth` must be run again every time the daemon restarts (for example after a reboot):
-`pswsetup` installs a script that does it for you (see below).
+`pswsetup` installs a launch agent that does it for you (see below).
 
 The scripts find Homebrew's `ruby`, `apw` and `jq` with `brew --prefix <formula>`, so `brew` must be on
 the `$PATH` Alfred runs scripts with. The Ruby scripts start with a short `/bin/sh` launcher that re-runs
@@ -78,7 +78,7 @@ The cache is now ready and Passwords.csv has been deleted: you can start using `
 that runs `src/launch_agent/agent_script.sh` at login and every 15 minutes. It opens Google Chrome if it isn't
 running (unless "Agent Launches Chrome" is unchecked) and, when apw isn't authenticated, asks for the PIN
 shown by Apple Passwords. macOS doesn't let it read the workflow if Alfred's preferences are in Documents,
-Desktop or a cloud folder: the agent then says so in a dialog. To opt out, uncheck "APW Launch Script" in the
+Desktop or a cloud folder: the agent then says so in a dialog. To opt out, uncheck "APW Launch Agent" in the
 [Workflow's Configuration](#configuration-variables) and run `pswsetup` again: it removes the LaunchAgent.
 Deleting the workflow is enough too: at its next run, the LaunchAgent finds `src/launch_agent/agent_script.sh`
 gone and removes itself. Workflow updates need no `pswsetup`: each run brings the LaunchAgent up to date
@@ -99,16 +99,16 @@ The following variables are configurable via Alfred:
 | Search Keyword | Keyword to trigger password search | `psw` |
 | Cipher Salt | Salt used during key-derivation process for encryption | `alfred-psw-workflow` |
 | Keep Clipboard Delay | Number of seconds (decimals allowed) to keep password/OTP in secure clipboard | `30` |
-| APW Launch Script | Let `pswsetup` install the script that keeps apw authenticated (unchecked: remove it) | checked |
-| Agent Launches Chrome | Let that script open Google Chrome when it isn't running. Run `pswsetup` after changing it | checked |
+| APW Launch Agent | Let `pswsetup` install the launch agent that keeps apw authenticated (unchecked: remove it) | checked |
+| Agent Launches Chrome | Let that agent open Google Chrome when it isn't running. Run `pswsetup` after changing it | checked |
 
 ## Troubleshooting
 
 | Message | Fix |
 |---------|-----|
 | `The apw daemon isn't running or isn't responding…` (dialog) | Restart the daemon in Terminal: `brew services restart apw` (Homebrew install) or `apw start` (custom install). The dialog comes back every 15 minutes until it answers. |
-| `macOS blocks the apw agent from reading the workflow folder…` (dialog) | Move Alfred's preferences out of Documents, Desktop or a cloud folder (Alfred Preferences → Advanced → Syncing), or uncheck "APW Launch Script" and run `pswsetup`. |
-| `apw execution failed or canceled` | Touch ID was canceled, or the apw daemon isn't running or paired: start it and run `apw auth` again (needed after every reboot; the APW Launch Script asks for the PIN within 15 minutes). |
+| `macOS blocks the apw agent from reading the workflow folder…` (dialog) | Move Alfred's preferences out of Documents, Desktop or a cloud folder (Alfred Preferences → Advanced → Syncing), or uncheck "APW Launch Agent" and run `pswsetup`. |
+| `apw execution failed or canceled` | Touch ID was canceled, or the apw daemon isn't running or paired: start it and run `apw auth` again (needed after every reboot; the APW Launch Agent asks for the PIN within 15 minutes). |
 | `No Password found for this username` | apw found no password for this account, for example because it was deleted or renamed since the last sync: run `pswsetup`. |
 | `No OTP found for this username` | The entry has no verification code in Passwords. |
 | `jq not found: brew install jq` | Install jq (macOS < 15 only). |

@@ -8,7 +8,7 @@ require 'fileutils'
 
 LAUNCH_AGENT_TEMPLATE = File.expand_path('sh.less-software.psw-workflow.apw-auth.plist.tpl', __dir__)
 
-# The "APW Launch Script" checkbox (APW_LAUNCH_SCRIPT: "1" or "0") installs it, or removes it when unchecked.
+# The "APW Launch Agent" checkbox (APW_LAUNCH_SCRIPT: "1" or "0") installs it, or removes it when unchecked.
 # Under launchd, which doesn't pass the workflow's variables, it is unset: the agent keeps itself installed.
 # AGENT_LAUNCHES_CHROME ("1" or "0") is written into the plist, the only way agent_script.sh gets it.
 def generate_launch_agent
