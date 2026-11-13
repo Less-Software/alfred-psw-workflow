@@ -53,14 +53,16 @@ class AgentTest < Minitest::Test
   PS
 
   # Returns the fakes' calls
-  def run_script(list_status:, pin: '', processes: USER_CHROME + APW_CHROME, request_status: 0)
+  def run_script(list_status:, pin: '', processes: USER_CHROME + APW_CHROME, request_status: 0,
+                 launches_chrome: nil)
     env = {
       'PATH' => "#{@dir}/bin:#{ENV['PATH']}",
       'FAKE_DIR' => @dir,
       'LIST_STATUS' => list_status.to_s,
       'REQUEST_STATUS' => request_status.to_s,
       'PIN' => pin,
-      'PROCESSES' => processes
+      'PROCESSES' => processes,
+      'AGENT_LAUNCHES_CHROME' => launches_chrome
     }
     FileUtils.rm_f(%w[calls dialogs].map { File.join(@dir, _1) }) # this run only
     _, err, st = Open3.capture3(env, File.expand_path('../src/launch_agent/agent_script.sh', __dir__))
@@ -102,5 +104,10 @@ class AgentTest < Minitest::Test
   def test_opens_chrome_when_only_apw_chrome_runs
     assert_equal 'open -n -g -a Google Chrome', run_script(list_status: 3, processes: APW_CHROME)[1]
     assert_equal 'open -n -g -a Google Chrome', run_script(list_status: 3, processes: '')[1]
+  end
+
+  def test_chrome_setting_unchecked
+    assert_equal [UPDATE, 'apw pw list example.invalid'],
+      run_script(list_status: 3, processes: '', launches_chrome: '0')
   end
 end

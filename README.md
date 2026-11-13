@@ -76,12 +76,13 @@ The cache is now ready and Passwords.csv has been deleted: you can start using `
 
 `pswsetup` also installs a LaunchAgent (`~/Library/LaunchAgents/sh.less-software.psw-workflow.apw-auth.plist`)
 that runs `src/launch_agent/agent_script.sh` at login and every 15 minutes. It opens Google Chrome if it isn't
-running and, when apw isn't authenticated, asks for the PIN shown by Apple Passwords. macOS doesn't let it
-read the workflow if Alfred's preferences are in Documents, Desktop or a cloud folder: the agent then says so
-in a dialog. To opt out, uncheck "APW Launch Script" in the [Workflow's
-Configuration](#configuration-variables) and run `pswsetup` again: it removes the LaunchAgent. Deleting the
-workflow is enough too: at its next run, the LaunchAgent finds `src/launch_agent/agent_script.sh` gone and
-removes itself. Workflow updates need no `pswsetup`: each run brings the LaunchAgent up to date first.
+running (unless "Agent Launches Chrome" is unchecked) and, when apw isn't authenticated, asks for the PIN
+shown by Apple Passwords. macOS doesn't let it read the workflow if Alfred's preferences are in Documents,
+Desktop or a cloud folder: the agent then says so in a dialog. To opt out, uncheck "APW Launch Script" in the
+[Workflow's Configuration](#configuration-variables) and run `pswsetup` again: it removes the LaunchAgent.
+Deleting the workflow is enough too: at its next run, the LaunchAgent finds `src/launch_agent/agent_script.sh`
+gone and removes itself. Workflow updates need no `pswsetup`: each run brings the LaunchAgent up to date
+first.
 
 <br>
 <div align="center">
@@ -99,6 +100,7 @@ The following variables are configurable via Alfred:
 | Cipher Salt | Salt used during key-derivation process for encryption | `alfred-psw-workflow` |
 | Keep Clipboard Delay | Number of seconds (decimals allowed) to keep password/OTP in secure clipboard | `30` |
 | APW Launch Script | Let `pswsetup` install the script that keeps apw authenticated (unchecked: remove it) | checked |
+| Agent Launches Chrome | Let that script open Google Chrome when it isn't running. Run `pswsetup` after changing it | checked |
 
 ## Troubleshooting
 
@@ -176,22 +178,24 @@ Both Ruby scripts derive the cache key with `src/cache_key.rb`.
 ### `src/launch_agent/generate.rb`: apw auth LaunchAgent
 
 Fills `src/launch_agent/sh.less-software.psw-workflow.apw-auth.plist.tpl` with the paths of
-`src/launch_agent/agent_script.sh` and the plist, and the current `$PATH` (launchd's lacks Homebrew). It
-writes the result to `~/Library/LaunchAgents/` and reloads the agent when the result differs from the
-installed plist or launchd hasn't loaded it, or removes the agent when `APW_LAUNCH_SCRIPT` is `0`.
-`setup_workflow.rb` calls it, and `agent_script.sh` runs it directly. Don't run it from a checkout in
-Documents or Desktop: the agent would point at that checkout, which macOS doesn't let it read.
+`src/launch_agent/agent_script.sh` and the plist, and the current `$PATH` (launchd's lacks Homebrew) and
+`AGENT_LAUNCHES_CHROME` (launchd doesn't pass the workflow's variables). It writes the result to
+`~/Library/LaunchAgents/` and reloads the agent when the result differs from the installed plist or launchd
+hasn't loaded it, or removes the agent when `APW_LAUNCH_SCRIPT` is `0`. `setup_workflow.rb` calls it, and
+`agent_script.sh` runs it directly. Don't run it from a checkout in Documents or Desktop: the agent would
+point at that checkout, which macOS doesn't let it read.
 
 ### `src/launch_agent/agent_script.sh`: apw authentication (LaunchAgent)
 
 Runs `generate.rb` first, so that a workflow update that changes the template updates the installed agent: the
-reload ends this run and starts the new agent. It then opens Google Chrome if it isn't running, then runs
-`apw pw list example.invalid`: status 9 means apw isn't running or authenticated. It then runs
-`apw auth request`, retrying for 30 seconds since the daemon may still be starting at login. If the daemon
-still doesn't answer, it shows a dialog with the commands that restart it (`brew services restart apw`, or
-`apw start` for a custom install) and a link to apw's Getting Started guide, and stops there. Otherwise it
-asks for the PIN in an AppleScript dialog and passes it to `apw auth response --pin`, asking again with a new
-PIN when it's wrong. Canceling the dialog waits for the next run.
+reload ends this run and starts the new agent. It then opens Google Chrome if it isn't running (unless
+`AGENT_LAUNCHES_CHROME` is `0`), then runs `apw pw list example.invalid`: status 9 means apw isn't running or
+authenticated. It then runs `apw auth request`, retrying for 30 seconds since the daemon may still be starting
+at login. If the daemon still doesn't answer, it shows a dialog with the commands that restart it
+(`brew services restart apw`, or `apw start` for a custom install) and a link to apw's Getting Started guide,
+and stops there. Otherwise it asks for the PIN in an AppleScript dialog and passes it to
+`apw auth response --pin`, asking again with a new PIN when it's wrong. Canceling the dialog waits for the
+next run.
 
 ### `src/actions/main.sh`: Alfred action (↩)
 

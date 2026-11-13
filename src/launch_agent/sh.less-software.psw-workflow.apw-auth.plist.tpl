@@ -38,6 +38,8 @@
 	<dict>
 		<key>PATH</key>
 		<string>%{path}</string>
+		<key>AGENT_LAUNCHES_CHROME</key>
+		<string>%{launches_chrome}</string>
 	</dict>
 	<key>RunAtLoad</key>
 	<true/>

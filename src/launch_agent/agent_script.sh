@@ -8,10 +8,12 @@
 
 APW="$(brew --prefix apw)/bin/apw"
 
-# Open the user's Chrome. apw's daemon runs its own headless Chrome: its processes use an .apw profile, except
-# its crashpad handler, so only another process from Chrome's bundle is the user's Chrome.
-# -n: macOS counts apw's Chrome as running, so plain `open -a` would only bring it to the front.
-pgrep -lf "Google Chrome.app" | grep -Fv /.apw/ | grep -qv Crashpad || open -n -g -a "Google Chrome"
+# Open the user's Chrome, unless AGENT_LAUNCHES_CHROME is "0". apw's daemon runs its own headless Chrome: its
+# processes use an .apw profile, except its crashpad handler, so only another process from Chrome's bundle is
+# the user's Chrome. -n: macOS counts apw's Chrome as running, so plain `open -a` would only bring it to the front.
+if [ "$AGENT_LAUNCHES_CHROME" != 0 ]; then
+  pgrep -lf "Google Chrome.app" | grep -Fv /.apw/ | grep -qv Crashpad || open -n -g -a "Google Chrome"
+fi
 
 # Status 9: apw is not running or not authenticated. Any other status (results or none) means it is.
 "$APW" pw list example.invalid >/dev/null 2>&1
