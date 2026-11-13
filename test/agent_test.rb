@@ -7,16 +7,25 @@ require 'fileutils'
 class AgentTest < Minitest::Test
   parallelize_me! # each test uses its own temp dir
 
-  # Fakes prepended to PATH, logging their calls to $FAKE_DIR/calls. `apw pw list` exits LIST_STATUS (9: not
-  # authenticated); dialogs save their text to $FAKE_DIR/dialog, and the PIN one answers PIN, or is canceled when it
-  # is empty; pgrep lists PROCESSES, and finds the apw daemon unless DAEMON_STOPPED is set.
+  # Fakes prepended to PATH, logging their calls to $FAKE_DIR/calls. apw: `pw list` exits LIST_STATUS (9: not
+  # authenticated) and `auth request` exits REQUEST_STATUS. Dialogs add their text to $FAKE_DIR/dialogs, and the
+  # PIN one answers PIN, or is canceled when it is empty. pgrep lists PROCESSES; sleep returns at once.
   FAKES = {
     'brew' => %(echo "$FAKE_DIR"),
     'ruby' => %(echo "ruby ${1##*/}" >> "$FAKE_DIR/calls"),
-    'apw' => %(echo "apw $*" >> "$FAKE_DIR/calls"; [ "$1" = pw ] && exit "$LIST_STATUS"; exit 0),
-    'osascript' => %(echo "dialog" >> "$FAKE_DIR/calls"; echo "${@: -1}" > "$FAKE_DIR/dialog"
-                     [ -n "$PIN" ] || exit 1; echo "$PIN"),
-    'pgrep' => %([ "$*" = '-qf apw start' ] && exit "${DAEMON_STOPPED:-0}"; printf '%s' "$PROCESSES"),
+    'apw' => <<~'SH',
+      echo "apw $*" >> "$FAKE_DIR/calls"
+      case "$*" in
+        'pw list'*) exit "$LIST_STATUS" ;;
+        'auth request') exit "${REQUEST_STATUS:-0}" ;;
+      esac
+    SH
+    'osascript' => <<~'SH',
+      echo dialog >> "$FAKE_DIR/calls"; echo "${@: -1}" >> "$FAKE_DIR/dialogs"
+      [ -n "$PIN" ] || exit 1; echo "$PIN"
+    SH
+    'pgrep' => %(printf '%s' "$PROCESSES"),
+    'sleep' => 'exit 0',
     'open' => %(echo "open $*" >> "$FAKE_DIR/calls")
   }.freeze
 
@@ -41,16 +50,16 @@ class AgentTest < Minitest::Test
   PS
 
   # Returns the fakes' calls
-  def run_script(list_status:, pin: '', processes: USER_CHROME + APW_CHROME, daemon_stopped: false)
+  def run_script(list_status:, pin: '', processes: USER_CHROME + APW_CHROME, request_status: 0)
     env = {
       'PATH' => "#{@dir}/bin:#{ENV['PATH']}",
       'FAKE_DIR' => @dir,
       'LIST_STATUS' => list_status.to_s,
+      'REQUEST_STATUS' => request_status.to_s,
       'PIN' => pin,
-      'PROCESSES' => processes,
-      'DAEMON_STOPPED' => (daemon_stopped ? '1' : nil)
+      'PROCESSES' => processes
     }
-    FileUtils.rm_f(File.join(@dir, 'calls')) # calls of this run only
+    FileUtils.rm_f(%w[calls dialogs].map { File.join(@dir, _1) }) # this run only
     _, err, st = Open3.capture3(env, File.expand_path('../src/launch_agent/agent_script.sh', __dir__))
     assert st.success?, err
     File.readlines(File.join(@dir, 'calls'), chomp: true)
@@ -67,10 +76,11 @@ class AgentTest < Minitest::Test
       run_script(list_status: 9, pin: " 123456\n")
   end
 
-  def test_daemon_not_running
-    assert_equal [UPDATE, 'apw pw list example.invalid', 'dialog'], run_script(list_status: 9, daemon_stopped: true)
-    dialog = File.read(File.join(@dir, 'dialog'))
-    assert_includes dialog, 'brew services start apw'
+  def test_daemon_not_answering # not running, or still starting (at login): retried for 30 seconds
+    assert_equal [UPDATE, 'apw pw list example.invalid', *['apw auth request'] * 6, 'dialog'],
+      run_script(list_status: 9, request_status: 9)
+    dialog = File.read(File.join(@dir, 'dialogs'))
+    assert_includes dialog, 'brew services restart apw'
     assert_includes dialog, 'apw start'
   end
 

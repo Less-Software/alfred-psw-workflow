@@ -103,7 +103,7 @@ The following variables are configurable via Alfred:
 
 | Message | Fix |
 |---------|-----|
-| `The apw daemon isn't running…` (dialog) | Start the daemon in Terminal: `brew services start apw` (Homebrew install) or `apw start` (custom install). The dialog comes back every 15 minutes until it runs. |
+| `The apw daemon isn't running or isn't responding…` (dialog) | Restart the daemon in Terminal: `brew services restart apw` (Homebrew install) or `apw start` (custom install). The dialog comes back every 15 minutes until it answers. |
 | `apw execution failed or canceled` | Touch ID was canceled, or the apw daemon isn't running or paired: start it and run `apw auth` again (needed after every reboot; the APW Launch Script asks for the PIN within 15 minutes). |
 | `No Password found for this username` | apw found no password for this account, for example because it was deleted or renamed since the last sync: run `pswsetup`. |
 | `No OTP found for this username` | The entry has no verification code in Passwords. |
@@ -184,11 +184,12 @@ installed plist or launchd hasn't loaded it, or removes the agent when `APW_LAUN
 
 Runs `generate.rb` first, so that a workflow update that changes the template updates the installed agent: the
 reload ends this run and starts the new agent. It then opens Google Chrome if it isn't running, then runs
-`apw pw list example.invalid`: status 9 means apw isn't running or authenticated. If no `apw start` process is
-running, it shows a dialog with the commands that start the daemon (`brew services start apw`, or `apw start`
-for a custom install) and a link to apw's Getting Started guide, and stops there. Otherwise it runs
-`apw auth request`, asks for the PIN in an AppleScript dialog and passes it to `apw auth response --pin`,
-asking again with a new PIN when it's wrong. Canceling the dialog waits for the next run.
+`apw pw list example.invalid`: status 9 means apw isn't running or authenticated. It then runs
+`apw auth request`, retrying for 30 seconds since the daemon may still be starting at login. If the daemon
+still doesn't answer, it shows a dialog with the commands that restart it (`brew services restart apw`, or
+`apw start` for a custom install) and a link to apw's Getting Started guide, and stops there. Otherwise it
+asks for the PIN in an AppleScript dialog and passes it to `apw auth response --pin`, asking again with a new
+PIN when it's wrong. Canceling the dialog waits for the next run.
 
 ### `src/actions/main.sh`: Alfred action (↩)
 
