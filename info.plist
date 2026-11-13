@@ -262,7 +262,14 @@ Searching uses a pre-computed local encrypted cache of titles, domains and usern
 This cache is created from a **Passwords.csv** export from **Password.app**, and imported via `pswsetup`.
 
 Passwords and OTP codes are fetched live from Apple Passwords through [apw](https://github.com/bendews/apw),
-and require authentication before being copied (via main password or Touch ID).</string>
+and require authentication before being copied (via main password or Touch ID).
+
+The apw daemon loses its authentication every time it restarts (after a reboot, for example).
+To keep copies working, `pswsetup` also installs a launch agent, a background job macOS runs at login and every 15 minutes,
+and updates it when the workflow changes. When apw needs authenticating, the agent asks for the PIN shown by Apple Passwords
+in a dialog. If the apw daemon doesn't answer, it tells you how to restart it.
+The agent removes itself when you delete the workflow. To remove it yourself, uncheck **APW Launch Agent**
+in the workflow's configuration and run `pswsetup` again.</string>
 	<key>uidata</key>
 	<dict>
 		<key>12EEC0F8-7F1C-4F0A-B6FE-A6F490C0573E</key>
