@@ -151,11 +151,11 @@ Runs on every keystroke with the query as `$1`. Once the query has at least 4 ch
 the cache, keeps the entries whose title, domain or username contains the query, and returns them to Alfred
 as Script Filter JSON. Each result's `arg` is `username|domain`.
 
-### `src/setup_cache.rb`: cache creation (`pswsync`)
+### `src/setup_workflow.rb`: cache creation (`pswsync`)
 
 Runs when invoked via `pswsync`: it uses AppleScript to open a file picker where the user selects their
 Passwords.csv export, then builds the cache from it.
-You can also run it directly: `src/setup_cache.rb path/to/Passwords.csv`.
+You can also run it directly: `src/setup_workflow.rb path/to/Passwords.csv`.
 
 Both Ruby scripts derive the cache key with `src/cache_key.rb`.
 
@@ -172,7 +172,7 @@ whose username matches to the clipboard.
 Both action scripts share `src/actions/apw_copy.sh`, which splits the argument on its last `|` (a username may contain one),
 runs apw and copies the result. They use `/usr/bin/jq` if present, otherwise `$(brew --prefix jq)/bin/jq`.
 
-The action scripts and `setup_cache.rb` report the outcome (copied, or what failed) by printing it for Alfred's
+The action scripts and `setup_workflow.rb` report the outcome (copied, or what failed) by printing it for Alfred's
 Post Notification output, so notifications show the workflow icon. Their stdout holds only that message, as
 `{"alfredworkflow": {"arg": "<message>", "variables": {"notification_title": "<title>"}}}`, and they exit 0 even on
 errors so that Alfred still shows it.

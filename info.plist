@@ -201,7 +201,7 @@
 				<key>scriptargtype</key>
 				<integer>1</integer>
 				<key>scriptfile</key>
-				<string>src/setup_cache.rb</string>
+				<string>src/setup_workflow.rb</string>
 				<key>type</key>
 				<integer>8</integer>
 			</dict>

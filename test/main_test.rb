@@ -29,7 +29,7 @@ class MainTest < Minitest::Test
       GitHub,https://github.com/login,octo,secret,,
       Work Mail,https://mail.example.com/,github-bot,pw,,
     CSV
-    _, err, st = run_script('setup_cache.rb', csv)
+    _, err, st = run_script('setup_workflow.rb', csv)
     assert st.success?, err
   end
 

@@ -7,7 +7,7 @@ require 'fileutils'
 
 ROOT = File.expand_path('../src', __dir__)
 
-class SetupCacheTest < Minitest::Test
+class SetupWorkflowTest < Minitest::Test
   parallelize_me! # each test uses its own temp dir or pasteboard, so they can share the process
 
   def setup
@@ -34,7 +34,7 @@ class SetupCacheTest < Minitest::Test
 
   def test_round_trip
     write_csv
-    out, err, st = run_script('setup_cache.rb', @csv)
+    out, err, st = run_script('setup_workflow.rb', @csv)
     assert st.success?, err
     assert_match(/2 items processed/, out) # the empty row is skipped
     refute File.exist?(@csv)               # input CSV is deleted
@@ -49,7 +49,7 @@ class SetupCacheTest < Minitest::Test
       Title,URL,Username,Password,Notes,OTPAuth
       Café Crème ☕,https://example.com/,zoë@例え.jp,pw,,
     CSV
-    _, err, st = run_script('setup_cache.rb', @csv)
+    _, err, st = run_script('setup_workflow.rb', @csv)
     assert st.success?, err
 
     # No locale set, as Alfred may run scripts: the query must still be read as UTF-8
@@ -64,24 +64,24 @@ class SetupCacheTest < Minitest::Test
 
   def test_seed_reused
     write_csv
-    assert run_script('setup_cache.rb', @csv)[2].success?
+    assert run_script('setup_workflow.rb', @csv)[2].success?
     seed = File.read(@seed)
 
     write_csv
-    out, err, st = run_script('setup_cache.rb', @csv)
+    out, err, st = run_script('setup_workflow.rb', @csv)
     assert st.success?, err
     refute_match(/Generated new seed/, out)
     assert_equal seed, File.read(@seed)
   end
 
   def test_missing_argument
-    _, err, st = run_script('setup_cache.rb')
+    _, err, st = run_script('setup_workflow.rb')
     assert_equal 1, st.exitstatus
     assert_match(/Usage/, err)
   end
 
   def test_missing_csv
-    _, err, st = run_script('setup_cache.rb', @csv)
+    _, err, st = run_script('setup_workflow.rb', @csv)
     assert_equal 1, st.exitstatus
     assert_match(/CSV file not found/, err)
     refute File.exist?(@cache)
@@ -89,7 +89,7 @@ class SetupCacheTest < Minitest::Test
 
   def test_malformed_csv
     File.write(@csv, "Title,URL,Username,Password\n\"unclosed,x\n")
-    _, err, st = run_script('setup_cache.rb', @csv)
+    _, err, st = run_script('setup_workflow.rb', @csv)
     assert_equal 1, st.exitstatus
     assert_match(/unable to parse/, err)
     refute File.exist?(@csv)   # still deleted on failure
@@ -98,7 +98,7 @@ class SetupCacheTest < Minitest::Test
 
   def test_other_csv_left_untouched
     File.write(@csv, "Date,Amount\n2026-01-01,12.50\n") # e.g. a bank export picked by mistake
-    _, err, st = run_script('setup_cache.rb', @csv)
+    _, err, st = run_script('setup_workflow.rb', @csv)
     assert_equal 1, st.exitstatus
     assert_match(/not a Passwords export/, err)
     assert File.exist?(@csv)
@@ -107,7 +107,7 @@ class SetupCacheTest < Minitest::Test
 
   def test_unparsable_url_keeps_raw_host
     File.write(@csv, "Title,URL,Username,Password\nBooks,https://bücher.de/a b,reader,pw\n") # URI rejects both
-    _, err, st = run_script('setup_cache.rb', @csv)
+    _, err, st = run_script('setup_workflow.rb', @csv)
     assert st.success?, err
     out, = run_script('main.rb', 'books')
     assert_equal 'reader|bücher.de', JSON.parse(out)['items'].first['arg']
@@ -115,15 +115,15 @@ class SetupCacheTest < Minitest::Test
 
   def test_failed_write_keeps_previous_cache
     write_csv
-    assert run_script('setup_cache.rb', @csv)[2].success?
+    assert run_script('setup_workflow.rb', @csv)[2].success?
     previous = File.read(@cache)
     FileUtils.mkdir("#{@cache}.tmp") # makes the next write fail
     write_csv
-    refute run_script('setup_cache.rb', @csv)[2].success?
+    refute run_script('setup_workflow.rb', @csv)[2].success?
     assert_equal previous, File.read(@cache)
   end
 
-  # Runs setup_cache.rb with a fake osascript (the file picker) first on PATH; returns the notifications printed
+  # Runs setup_workflow.rb with a fake osascript (the file picker) first on PATH; returns the notifications printed
   # for Alfred's Post Notification as [message, title]. The fake picker answers `picked`, or cancels when it is nil.
   # Sets @status, @err and @picker_calls.
   def notifications_from(*args, alfred: true, picked: nil)
@@ -142,7 +142,7 @@ class SetupCacheTest < Minitest::Test
       'PATH' => "#{bin}:#{ENV['PATH']}", 'alfred_version' => (alfred ? '5.5' : nil),
       'PICKED' => picked
     }
-    out, @err, @status = run_script('setup_cache.rb', *args, env: env)
+    out, @err, @status = run_script('setup_workflow.rb', *args, env: env)
     @picker_calls = File.exist?(picker_log) ? File.readlines(picker_log, chomp: true) : []
     return out.lines.grep(/alfredworkflow/) unless alfred # Terminal: plain progress output only
     # Alfred reads the whole stdout as one JSON object, so nothing else may be printed there
