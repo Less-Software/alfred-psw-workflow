@@ -30,7 +30,7 @@ end
 
 csv_arg = ARGV[0].to_s
 
-# The pswsync keyword passes no file: ask for one with a file picker
+# The pswsetup keyword passes no file: ask for one with a file picker
 if csv_arg.empty? && ENV['alfred_version']
   # activate brings osascript's dialog in front of other windows
   csv_arg = IO.popen(['osascript', '-e', 'activate', '-e', 'POSIX path of (choose file with prompt ' \

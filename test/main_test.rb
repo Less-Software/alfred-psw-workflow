@@ -48,8 +48,8 @@ class MainTest < Minitest::Test
 
   def test_missing_cache
     items = search('github')
-    assert_equal 'Seed or Cache missing. Please run sync.', items[0]['title']
-    assert_match(/pswsync/, items[0]['subtitle'])
+    assert_equal 'Seed or Cache missing. Please run pswsetup.', items[0]['title']
+    assert_match(/pswsetup/, items[0]['subtitle'])
   end
 
   def test_corrupt_cache

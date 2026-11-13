@@ -6,7 +6,7 @@ Alfred workflow that lets you search Apple **Passwords.app** entries and copy a 
 (alternative action) to *a secure, expiring clipboard*.
 
 Searching uses a pre-computed local encrypted cache of titles, domains and usernames (never passwords).
-This cache is created from a **Passwords.csv** export from **Password.app**, and imported via `pswsync`.
+This cache is created from a **Passwords.csv** export from **Password.app**, and imported via `pswsetup`.
 
 Passwords and OTP codes are fetched live from Apple Passwords through [apw](https://github.com/bendews/apw),
 and require authentication before being copied (via main password or Touch ID).
@@ -61,7 +61,7 @@ The scripts find Homebrew's `ruby`, `apw` and `jq` with `brew --prefix <formula>
 the `$PATH` Alfred runs scripts with. The Ruby scripts start with a short `/bin/sh` launcher that re-runs
 them with Homebrew's ruby, because a shebang line can't call `brew`.
 
-### `pswsync` command
+### `pswsetup` command
 
 Builds the encrypted search cache from a Passwords CSV export.
 Run it once to set up, then again whenever you add, rename or delete entries in Passwords:
@@ -69,7 +69,7 @@ Run it once to set up, then again whenever you add, rename or delete entries in 
 
 1. Export your passwords to a CSV file: in the Passwords app, **File → Export All Passwords…**
    We recommend saving it to a RAM disk (see [Security](#security)).
-2. In Alfred, type `pswsync` and select the CSV file in the file picker that opens.
+2. In Alfred, type `pswsetup` and select the CSV file in the file picker that opens.
 
 The cache is now ready and Passwords.csv has been deleted: you can start using `psw`.
 
@@ -94,14 +94,14 @@ The following variables are configurable via Alfred:
 | Message | Fix |
 |---------|-----|
 | `apw execution failed or canceled` | Touch ID was canceled, or the apw daemon isn't running or paired: start it and run `apw auth` again (needed after every reboot). |
-| `No Password found for this username` | apw found no password for this account, for example because it was deleted or renamed since the last sync: run `pswsync`. |
+| `No Password found for this username` | apw found no password for this account, for example because it was deleted or renamed since the last sync: run `pswsetup`. |
 | `No OTP found for this username` | The entry has no verification code in Passwords. |
 | `jq not found: brew install jq` | Install jq (macOS < 15 only). |
 | `Failed to copy to clipboard` | macOS refused the clipboard write: try again, and check the Alfred debugger for the error. |
-| `Seed or Cache missing. Please run sync.` | Run `pswsync`. |
-| `Decryption or Parsing Error` | The cache was made on another Mac or with another seed, or is damaged: run `pswsync`. The subtitle shows the cause. |
-| `Error: unable to parse …` (after `pswsync`) | The CSV isn't a valid Passwords export: export it again. |
-| `Error: … is not a Passwords export` (after `pswsync`) | The picked CSV has no `Password` column, so it was left untouched: pick your Passwords export. |
+| `Seed or Cache missing. Please run pswsetup.` | Run `pswsetup`. |
+| `Decryption or Parsing Error` | The cache was made on another Mac or with another seed, or is damaged: run `pswsetup`. The subtitle shows the cause. |
+| `Error: unable to parse …` (after `pswsetup`) | The CSV isn't a valid Passwords export: export it again. |
+| `Error: … is not a Passwords export` (after `pswsetup`) | The picked CSV has no `Password` column, so it was left untouched: pick your Passwords export. |
 | A result says `can't copy without website` | apw finds entries by website, so selecting an entry without one opens Passwords.app instead: copy it from there. |
 
 If nothing happens at all, open the workflow in Alfred Preferences, click the debugger (🐞) icon and try
@@ -110,12 +110,12 @@ again: it shows each step and any error. A common cause is `brew` missing from t
 ## Security
 
 *Note:* The Passwords.csv file exported by Passwords.app contains every password in clear text.
-Even though `pswsync` deletes it, a file written to your disk can be indexed by Spotlight or
+Even though `pswsetup` deletes it, a file written to your disk can be indexed by Spotlight or
 copied by Time Machine before then, and deleted data can stay recoverable on the drive.
 
 We recommend you export it to a RAM disk instead, so it never touches the disk.
 [RAM Folder](https://less-software.sh/ram-folder) is a modern, reliable way to do this:
-create a RAM Folder with **Sync RAM Folder** turned off, save the export there, and select it in the `pswsync`
+create a RAM Folder with **Sync RAM Folder** turned off, save the export there, and select it in the `pswsetup`
 file picker.
 
 If you export to a regular folder instead, be sure to exclude it from Time Machine backups and from Spotlight
@@ -131,7 +131,7 @@ The clipboard is cleared 30 seconds after the copy, unless something else was co
 delay, set "Keep Clipboard Delay" in the [Workflow's Configuration](#configuration-variables). A value that isn't
 a number makes the copy fail rather than leave the secret on the clipboard.
 
-### How `pswsync` keeps my data safe
+### How `pswsetup` keeps my data safe
 
 - creates `~/.config/alfred-psw-workflow/seed` (secure random, mode `600`) if it doesn't exist yet,
 - derives the encryption key from that seed, the cipher customisable "salt" and this Mac's hardware UUID,
@@ -141,7 +141,7 @@ a number makes the copy fail rather than leave the secret on the clipboard.
   it is left untouched, so picking the wrong file can't delete it.
 
 The cache can only be decrypted on the Mac that created it. If you delete the seed or move to another Mac,
-run the sync again.
+run `pswsetup` again.
 
 ## How it works
 
@@ -151,9 +151,9 @@ Runs on every keystroke with the query as `$1`. Once the query has at least 4 ch
 the cache, keeps the entries whose title, domain or username contains the query, and returns them to Alfred
 as Script Filter JSON. Each result's `arg` is `username|domain`.
 
-### `src/setup_workflow.rb`: cache creation (`pswsync`)
+### `src/setup_workflow.rb`: cache creation (`pswsetup`)
 
-Runs when invoked via `pswsync`: it uses AppleScript to open a file picker where the user selects their
+Runs when invoked via `pswsetup`: it uses AppleScript to open a file picker where the user selects their
 Passwords.csv export, then builds the cache from it.
 You can also run it directly: `src/setup_workflow.rb path/to/Passwords.csv`.
 
