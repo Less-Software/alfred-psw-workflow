@@ -185,12 +185,13 @@ Documents or Desktop: the agent would point at that checkout, which macOS doesn'
 ### `src/launch_agent/agent_script.sh`: apw authentication (LaunchAgent)
 
 Runs `generate.rb` first, so that a workflow update that changes the template updates the installed agent: the
-reload ends this run and starts the new agent. It then runs `apw pw list example.invalid`: status 9 means apw
-isn't running or authenticated. It then runs `apw auth request`, retrying for 30 seconds since the daemon may
-still be starting at login. If the daemon still doesn't answer, it shows a dialog with the commands that
-restart it (`brew services restart apw`, or `apw start` for a custom install) and a link to apw's Getting
-Started guide, and stops there. Otherwise it asks for the PIN in an AppleScript dialog and passes it to
-`apw auth response --pin`, asking again with a new PIN when it's wrong. Canceling the dialog waits for the
+reload ends this run and starts the new agent. It then runs `apw pw list example.invalid`: `results` means apw
+is authenticated, and the `unpaired` error means the daemon runs but isn't authenticated. Any other answer means
+the daemon isn't running or is still starting (at login), so it retries for 30 seconds. If the daemon still
+doesn't answer, it shows a dialog with the commands that restart it (`brew services restart apw`, or
+`apw start` for a custom install) and a link to apw's Getting Started guide, and stops there. Once unpaired, it
+runs `apw auth request`, asks for the PIN in an AppleScript dialog and passes it to `apw auth response --pin`,
+asking again with a new PIN when it's wrong. Canceling the dialog, or a failed `apw auth request`, waits for the
 next run.
 
 ### `src/actions/main.sh`: Alfred action (↩)
