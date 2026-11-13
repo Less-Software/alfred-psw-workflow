@@ -8,13 +8,15 @@ class AgentTest < Minitest::Test
   parallelize_me! # each test uses its own temp dir
 
   # Fakes prepended to PATH, logging their calls to $FAKE_DIR/calls. `apw pw list` exits LIST_STATUS (9: not
-  # authenticated); the PIN dialog answers PIN, or is canceled when it is empty; pgrep lists PROCESSES.
+  # authenticated); dialogs save their text to $FAKE_DIR/dialog, and the PIN one answers PIN, or is canceled when it
+  # is empty; pgrep lists PROCESSES, and finds the apw daemon unless DAEMON_STOPPED is set.
   FAKES = {
     'brew' => %(echo "$FAKE_DIR"),
     'ruby' => %(echo "ruby ${1##*/}" >> "$FAKE_DIR/calls"),
     'apw' => %(echo "apw $*" >> "$FAKE_DIR/calls"; [ "$1" = pw ] && exit "$LIST_STATUS"; exit 0),
-    'osascript' => %(echo "dialog" >> "$FAKE_DIR/calls"; [ -n "$PIN" ] || exit 1; echo "$PIN"),
-    'pgrep' => %(printf '%s' "$PROCESSES"),
+    'osascript' => %(echo "dialog" >> "$FAKE_DIR/calls"; echo "${@: -1}" > "$FAKE_DIR/dialog"
+                     [ -n "$PIN" ] || exit 1; echo "$PIN"),
+    'pgrep' => %([ "$*" = '-qf apw start' ] && exit "${DAEMON_STOPPED:-0}"; printf '%s' "$PROCESSES"),
     'open' => %(echo "open $*" >> "$FAKE_DIR/calls")
   }.freeze
 
@@ -39,9 +41,9 @@ class AgentTest < Minitest::Test
   PS
 
   # Returns the fakes' calls
-  def run_script(list_status:, pin: '', processes: USER_CHROME + APW_CHROME)
+  def run_script(list_status:, pin: '', processes: USER_CHROME + APW_CHROME, daemon_stopped: false)
     env = { 'PATH' => "#{@dir}/bin:#{ENV['PATH']}", 'FAKE_DIR' => @dir, 'LIST_STATUS' => list_status.to_s,
-            'PIN' => pin, 'PROCESSES' => processes }
+            'PIN' => pin, 'PROCESSES' => processes, 'DAEMON_STOPPED' => (daemon_stopped ? '1' : nil) }
     FileUtils.rm_f(File.join(@dir, 'calls')) # calls of this run only
     _, err, st = Open3.capture3(env, File.expand_path('../src/agent.sh', __dir__))
     assert st.success?, err
@@ -57,6 +59,13 @@ class AgentTest < Minitest::Test
   def test_not_authenticated
     assert_equal [UPDATE, 'apw pw list example.invalid', 'apw auth request', 'dialog', 'apw auth response --pin 123456'],
       run_script(list_status: 9, pin: " 123456\n")
+  end
+
+  def test_daemon_not_running
+    assert_equal [UPDATE, 'apw pw list example.invalid', 'dialog'], run_script(list_status: 9, daemon_stopped: true)
+    dialog = File.read(File.join(@dir, 'dialog'))
+    assert_includes dialog, 'brew services start apw'
+    assert_includes dialog, 'apw start'
   end
 
   def test_dialog_canceled

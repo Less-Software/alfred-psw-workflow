@@ -17,6 +17,20 @@ pgrep -lf "Google Chrome.app" | grep -Fv /.apw/ | grep -qv Crashpad || open -n -
 "$APW" pw list example.invalid >/dev/null 2>&1
 [ $? -eq 9 ] || exit 0
 
+# No daemon to authenticate with: tell the user how to start it (shown at each run until it runs)
+if ! pgrep -qf "apw start"; then
+  osascript -e 'on run {message}' -e 'activate' \
+    -e 'set answer to display dialog message with title "Passwords.app Workflow" with icon caution ¬
+      buttons {"Open Documentation", "OK"} default button "OK"' \
+    -e 'if button returned of answer is "Open Documentation" then ¬
+      open location "https://github.com/bendews/apw#getting-started"' \
+    -e 'end run' "The apw daemon isn't running, so passwords and OTP codes can't be copied. Start it in Terminal:
+
+• Homebrew install: brew services start apw
+• Custom install: apw start" >/dev/null
+  exit 0
+fi
+
 prompt="Enter the PIN shown by Apple Passwords to authenticate apw:"
 # Each request makes Apple Passwords show a new PIN; launchd won't start another run while this one waits
 while "$APW" auth request >/dev/null; do
