@@ -176,8 +176,9 @@ Both Ruby scripts derive the cache key with `src/cache_key.rb`.
 Fills `src/launch_agent/sh.less-software.psw-workflow.apw-auth.plist.tpl` with the paths of
 `src/launch_agent/agent_script.sh` and the plist, and the current `$PATH` (launchd's lacks Homebrew). It
 writes the result to `~/Library/LaunchAgents/` and reloads the agent when the result differs from the
-installed plist, or removes the agent when `APW_LAUNCH_SCRIPT` is `0`. `setup_workflow.rb` calls it, and
-`agent_script.sh` runs it directly: `$(brew --prefix ruby)/bin/ruby src/launch_agent/generate.rb`.
+installed plist or launchd hasn't loaded it, or removes the agent when `APW_LAUNCH_SCRIPT` is `0`.
+`setup_workflow.rb` calls it, and `agent_script.sh` runs it directly:
+`$(brew --prefix ruby)/bin/ruby src/launch_agent/generate.rb`.
 
 ### `src/launch_agent/agent_script.sh`: apw authentication (LaunchAgent)
 

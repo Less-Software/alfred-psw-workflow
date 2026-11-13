@@ -32,7 +32,9 @@ def generate_launch_agent
 
   # Interpolate variables
   plist = File.read(LAUNCH_AGENT_TEMPLATE, encoding: 'utf-8').gsub(/%\{(\w+)\}/) { values.fetch($1.to_sym) }
-  return if installed && File.binread(path) == plist.b # rewritten when the template, workflow path or PATH changed
+  # Rewritten when the template or a value changed, reloaded when launchd hasn't loaded it
+  loaded = system('launchctl', 'print', service, out: File::NULL, err: File::NULL)
+  return if installed && loaded && File.binread(path) == plist.b
 
   FileUtils.mkdir_p(File.dirname(path))
   File.write(path, plist)

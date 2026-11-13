@@ -125,8 +125,9 @@ class SetupWorkflowTest < Minitest::Test
 
   # Runs setup_workflow.rb with a fake osascript (the file picker) and launchctl first on PATH; returns the notifications
   # printed for Alfred's Post Notification as [message, title]. The fake picker answers `picked`, or cancels when it
-  # is nil. Sets @status, @err, @picker_calls and @launchctl_calls.
-  def notifications_from(*args, alfred: true, picked: nil, launch_script: '1')
+  # is nil. The fake `launchctl print` finds the agent loaded unless `loaded` is false, and isn't logged.
+  # Sets @status, @err, @picker_calls and @launchctl_calls.
+  def notifications_from(*args, alfred: true, picked: nil, launch_script: '1', loaded: true)
     bin = File.join(@home, 'bin')
     picker_log = File.join(@home, 'picker_calls')
     launchctl_log = File.join(@home, 'launchctl_calls')
@@ -140,13 +141,18 @@ class SetupWorkflowTest < Minitest::Test
       echo "unexpected osascript call: $*" >&2; exit 1
     SH
     # Never the real launchctl: it would load the agent into this session
-    File.write(File.join(bin, 'launchctl'), %(#!/bin/bash\nprintf '%s\\n' "$*" >> "#{launchctl_log}"\n))
+    File.write(File.join(bin, 'launchctl'), <<~SH)
+      #!/bin/bash
+      [ "$1" = print ] && exit "$PRINT_STATUS"
+      printf '%s\\n' "$*" >> "#{launchctl_log}"
+    SH
     %w[osascript launchctl].each { File.chmod(0o755, File.join(bin, _1)) }
     env = {
       'PATH' => "#{bin}:#{ENV['PATH']}",
       'alfred_version' => (alfred ? '5.5' : nil),
       'PICKED' => picked,
-      'APW_LAUNCH_SCRIPT' => launch_script
+      'APW_LAUNCH_SCRIPT' => launch_script,
+      'PRINT_STATUS' => (loaded ? '0' : '113') # 113: launchctl's "could not find service"
     }
     out, @err, @status = run_script('setup_workflow.rb', *args, env: env)
     @picker_calls = File.exist?(picker_log) ? File.readlines(picker_log, chomp: true) : []
@@ -255,6 +261,13 @@ class SetupWorkflowTest < Minitest::Test
     notifications_from
     assert_equal ["bootout gui/#{Process.uid}/sh.less-software.psw-workflow.apw-auth", "bootstrap gui/#{Process.uid} #{agent}"], @launchctl_calls
     assert_includes File.read(agent), '900'
+  end
+
+  def test_alfred_reloads_unloaded_apw_auth_agent # for example after a manual bootout
+    notifications_from
+    notifications_from(loaded: false)
+    assert_equal ["bootout gui/#{Process.uid}/sh.less-software.psw-workflow.apw-auth",
+                  "bootstrap gui/#{Process.uid} #{agent}"], @launchctl_calls
   end
 
   def test_alfred_apw_auth_agent_failure_keeps_the_cache
