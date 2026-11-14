@@ -7,7 +7,7 @@ require 'securerandom'
 class SecretPbcopyTest < Minitest::Test
   parallelize_me! # each test uses its own temp dir or pasteboard, so they can share the process
 
-  SCRIPT = File.expand_path('../src/actions/secret_pbcopy.sh', __dir__)
+  SCRIPT = File.expand_path('../../src/actions/secret_pbcopy.sh', __dir__)
 
   # Reads or writes the private pasteboard named argv[0]; with argv[1], replaces its text like another app would
   PASTEBOARD_JS = <<~JS

@@ -51,7 +51,7 @@ class AgentTest < Minitest::Test
       'PIN' => pin
     }
     FileUtils.rm_f(%w[calls dialogs].map { File.join(@dir, _1) }) # this run only
-    _, err, st = Open3.capture3(env, File.expand_path('../src/launch_agent/agent_script.sh', __dir__))
+    _, err, st = Open3.capture3(env, File.expand_path('../../src/launch_agent/agent_script.sh', __dir__))
     assert st.success?, err
     File.readlines(File.join(@dir, 'calls'), chomp: true)
   end

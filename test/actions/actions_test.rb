@@ -46,7 +46,7 @@ class ActionTest < Minitest::Test
       'APW_STATUS' => apw_status.to_s,
       **env
     }
-    @out, err, st = Open3.capture3(env, File.expand_path("../src/actions/#{script}", __dir__), arg)
+    @out, err, st = Open3.capture3(env, File.expand_path("../../src/actions/#{script}", __dir__), arg)
     [st, err]
   end
 
