@@ -35,7 +35,7 @@ Touch ID is then required to unlock the entry. A notification confirms the copy.
 The clipboard is cleared 30 seconds later ([delay is configurable](#configuration-variables)),
 unless you copied something else meanwhile (see [Security](#security)).
 
-apw finds entries by website, so for an entry without one, ↩ and ⌥↩ open Passwords.app instead.
+`apw` finds entries by website, so for an entry without one, ↩ and ⌥↩ open Passwords.app instead.
 
 <br>
 <div align="center">
@@ -53,10 +53,12 @@ brew install bendews/homebrew-tap/apw
 brew install jq   # only on macOS < 15; macOS 15+ ships /usr/bin/jq
 ```
 
-Then set up apw (a browser with the iCloud Passwords extension, the background daemon, and `apw auth` pairing)
-by following the [apw Getting Started guide](https://github.com/bendews/apw#getting-started).
+Then set up `apw`: you'll need a compatible browser (Chrome will do) with the
+[iCloud Passwords extension](https://chromewebstore.google.com/detail/icloud-passwords/pejdijmoenmkgeppbflobdenhhabjlaj?hl=en) installed and the `apw` background daemon installed & running).
+
+By following the [`apw` Getting Started guide](https://github.com/bendews/apw#getting-started).
 `apw auth` must be run again every time the daemon restarts (for example after a reboot):
-`pswsetup` installs a launch agent that does it for you (see below).
+`pswsetup` can install a launch agent that does it for you.
 
 The scripts find Homebrew's `ruby`, `apw` and `jq` with `brew --prefix <formula>`, so `brew` must be on
 the `$PATH` Alfred runs scripts with. The Ruby scripts start with a short `/bin/sh` launcher that re-runs
@@ -77,7 +79,9 @@ The cache is now ready and Passwords.csv has been deleted: you can start using `
 `pswsetup` also installs a LaunchAgent (`~/Library/LaunchAgents/sh.less-software.psw-workflow.apw-auth.plist`)
 that runs `src/launch_agent/agent_script.sh` at login and every 15 minutes. When apw isn't authenticated, it
 asks for the PIN shown by Apple Passwords. macOS doesn't let it read the workflow if Alfred's preferences are
-in Documents, Desktop or a cloud folder: the agent then says so in a dialog. To opt out, uncheck
+in Documents, Desktop or a cloud folder: the agent then says so in a dialog.
+
+To opt out, uncheck
 "APW Launch Agent" in the [Workflow's Configuration](#configuration-variables) and run `pswsetup` again: it
 removes the LaunchAgent. Deleting the workflow is enough too: at its next run, the LaunchAgent finds
 `src/launch_agent/agent_script.sh` gone and removes itself. Workflow updates need no `pswsetup`: each run
@@ -130,6 +134,9 @@ We recommend you export it to a RAM disk instead, so it never touches the disk.
 [RAM Folder](https://less-software.sh/ram-folder) is a modern, reliable way to do this:
 create a RAM Folder with **Sync RAM Folder** turned off, save the export there, and select it in the `pswsetup`
 file picker.
+
+Otherwise, you'll find every alternative method available to create a RAM Disk on macOS in this 
+[macOS RAM Disk guide](https://less-software.sh/ram-folder/macos-ram-disk).
 
 If you export to a regular folder instead, be sure to exclude it from Time Machine backups and from Spotlight
 indexing in System Settings.
