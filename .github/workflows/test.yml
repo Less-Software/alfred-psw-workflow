@@ -18,4 +18,5 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby-version }}
-      - run: rake test
+          bundler-cache: true
+      - run: bundle exec rake test

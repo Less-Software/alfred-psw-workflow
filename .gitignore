@@ -1,1 +1,3 @@
 releases/
+# Not locked: each supported Ruby resolves its own Minitest
+Gemfile.lock

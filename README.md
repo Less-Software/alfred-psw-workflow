@@ -143,13 +143,16 @@ See [doc/files.md](doc/files.md) for what each script does.
 
 - Fork https://github.com/Less-Software/alfred-psw-workflow
 - Clone it to your development machine
-- Add tests for your change and run `rake` before opening a pull request
+- Add tests for your change and run `bundle exec rake` before opening a pull request
 - Open a pull request targeting the official repository
 
 ### Tests
 
+Ruby 3.1 or later:
+
 ```sh
-rake
+bundle install
+bundle exec rake
 ```
 
 The tests run on macOS only. They use fake `HOME` and `PATH` directories, so they never touch your real
