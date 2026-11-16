@@ -12,23 +12,7 @@ Everything the workflow does to keep your passwords safe, and what it can't prot
 
 The workflow never writes passwords, OTP codes, notes or the `apw` PIN to disk.
 
-## Importing Passwords.csv (`pswsetup`)
-
-Passwords.csv holds every password in clear text, so `pswsetup` keeps as little of it as possible, for as short a
-time as possible:
-
-- The file picker only accepts CSV files.
-- Only the Title, URL and Username columns are kept: Password, Notes and OTPAuth never are.
-- Each URL is reduced to its host, plus its port when it isn't the default one: paths and query strings are never kept.
-- Once the file is known to be a Passwords export, it is overwritten with zeros, synced to disk, then deleted when
-  `pswsetup` exits, however it ends: success, parsing error, unreadable seed or unexpected error.
-  If it can't be overwritten (a read-only file, for example), it is still deleted.
-- A CSV without a `Password` column isn't a Passwords export: it is left untouched, so picking the wrong file can't
-  destroy it.
-
-On an SSD, the overwrite doesn't guarantee the data is gone (see [Limits](#limits)): export to a RAM disk instead.
-
-## Exporting to a RAM disk
+## Exporting Passwords.csv
 
 Export Passwords.csv to a RAM disk, so it never touches your disk.
 [RAM Folder](https://less-software.sh/ram-folder) is a modern, reliable way to do this:
@@ -45,6 +29,22 @@ On flash storage, overwriting doesn't reach the original data, whatever the form
 
 If you export to a regular folder instead, be sure to exclude it from Time Machine backups and from Spotlight
 indexing in System Settings.
+
+## Importing Passwords.csv (`pswsetup`)
+
+Passwords.csv holds every password in clear text, so `pswsetup` keeps as little of it as possible, for as short a
+time as possible:
+
+- The file picker only accepts CSV files.
+- Only the Title, URL and Username columns are kept: Password, Notes and OTPAuth never are.
+- Each URL is reduced to its host, plus its port when it isn't the default one: paths and query strings are never kept.
+- Once the file is known to be a Passwords export, it is overwritten with zeros, synced to disk, then deleted when
+  `pswsetup` exits, however it ends: success, parsing error, unreadable seed or unexpected error.
+  If it can't be overwritten (a read-only file, for example), it is still deleted.
+- A CSV without a `Password` column isn't a Passwords export: it is left untouched, so picking the wrong file can't
+  destroy it.
+
+On an SSD, the overwrite doesn't guarantee the data is gone (see [Limits](#limits)): export to a RAM disk instead.
 
 ## Search cache encryption
 
@@ -110,7 +110,7 @@ clipboard or Passwords.
   it up. On an SSD, overwriting doesn't reach the original data, as the drive writes to new cells, and APFS snapshots
   can keep it too. Apple no longer offers a secure delete for SSDs and
   [recommends FileVault instead](https://support.apple.com/guide/disk-utility/erase-and-reformat-a-storage-device-dskutl14079/mac):
-  [export to a RAM disk](#exporting-to-a-ram-disk), and turn on FileVault.
+  [export to a RAM disk](#exporting-passwordscsv), and turn on FileVault.
 - **Software running as you** can read the seed, the hardware UUID and the cache like `psw` does, and so decrypt the
   titles, domains and usernames. It can also read the clipboard while a password is on it.
 - **The hardware UUID isn't secret:** System Information shows it. A copy of the seed and the cache (in a backup, for

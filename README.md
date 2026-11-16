@@ -71,7 +71,7 @@ Run it once to set up, then again whenever you add, rename or delete entries in 
 `psw` only finds the entries that existed at the last sync.
 
 1. Export your passwords to a CSV file: in the **Passwords app**, **File → Export All Passwords…**
-   We recommend saving it to a [RAM disk](doc/security.md#exporting-to-a-ram-disk).
+   We recommend saving it to a [RAM disk](doc/security.md#exporting-passwordscsv).
 2. In Alfred, type `pswsetup` and select the CSV file in the file picker that opens.
 
 The cache is now ready and Passwords.csv has been deleted: you can start using `psw`.
@@ -132,7 +132,7 @@ again: it shows each step and any error. A common cause is `brew` missing from t
 - Secure, expiring clipboard.
 - `apw` PIN never stored.
 
-We recommend exporting Passwords.csv to a [RAM disk](doc/security.md#exporting-to-a-ram-disk).
+We recommend exporting Passwords.csv to a [RAM disk](doc/security.md#exporting-passwordscsv).
 See [doc/security.md](doc/security.md) for every measure in detail, and their limits.
 
 ## How it works
