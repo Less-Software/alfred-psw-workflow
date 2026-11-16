@@ -1,6 +1,7 @@
 # alfred-psw-workflow (macOS only)
 
 <img width="64" height="64" alt="alfred-psw-icon" src="https://github.com/user-attachments/assets/a4cc102f-93ef-4811-b29a-db2288846162"><br>
+<a href="https://github.com/Less-Software/alfred-psw-workflow/actions/workflows/test.yml"><img alt="Test" src="https://github.com/Less-Software/alfred-psw-workflow/actions/workflows/test.yml/badge.svg"></a>
 
 Alfred workflow that lets you search Apple **Passwords.app** entries and copy a password (main action) or OTP code
 (alternative action) to *a secure, expiring clipboard*.
