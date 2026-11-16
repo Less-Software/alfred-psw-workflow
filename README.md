@@ -33,7 +33,7 @@ On the selected entry:
 
 Touch ID is then required to unlock the entry. A notification confirms the copy.
 The clipboard is cleared 30 seconds later ([delay is configurable](#configuration-variables)),
-unless you copied something else meanwhile (see [Security](#security)).
+unless you copied something else meanwhile (see [Secure clipboard](doc/security.md#secure-clipboard)).
 
 `apw` finds entries by website, so for an entry without one, ↩ and ⌥↩ open **Passwords.app** instead.
 
@@ -71,7 +71,7 @@ Run it once to set up, then again whenever you add, rename or delete entries in 
 `psw` only finds the entries that existed at the last sync.
 
 1. Export your passwords to a CSV file: in the **Passwords app**, **File → Export All Passwords…**
-   We recommend saving it to a RAM disk (see [Security](#security)).
+   We recommend saving it to a [RAM disk](doc/security.md#exporting-to-a-ram-disk).
 2. In Alfred, type `pswsetup` and select the CSV file in the file picker that opens.
 
 The cache is now ready and Passwords.csv has been deleted: you can start using `psw`.
@@ -126,42 +126,14 @@ again: it shows each step and any error. A common cause is `brew` missing from t
 
 ## Security
 
-*Note:* The Passwords.csv file exported by **Passwords.app** contains every password in clear text.
-Even though `pswsetup` overwrites and deletes it, a file written to your disk can be indexed by Spotlight or
-copied by Time Machine before then, and SSDs can keep overwritten data recoverable.
+- Encrypted search cache, without passwords.
+- Passwords and OTP codes fetched live, after Touch ID.
+- Passwords.csv overwritten and deleted after import.
+- Secure, expiring clipboard.
+- `apw` PIN never stored.
 
-We recommend you export it to a RAM disk instead, so it never touches the disk.
-[RAM Folder](https://less-software.sh/ram-folder) is a modern, reliable way to do this:
-create a RAM Folder with **Sync RAM Folder** turned off, save the export there, and select it in the `pswsetup`
-file picker.
-
-Otherwise, you'll find every alternative method available to create a RAM Disk on macOS in this 
-[macOS RAM Disk guide](https://less-software.sh/ram-folder/macos-ram-disk).
-
-If you export to a regular folder instead, be sure to exclude it from Time Machine backups and from Spotlight
-indexing in System Settings.
-
-### How copied passwords are protected
-
-Passwords and OTP codes are copied with the [nspasteboard.org](http://nspasteboard.org) concealed and transient
-markers, which tell clipboard managers that respect them not to record the copy. They also stay off
-Universal Clipboard, so they aren't sent to your other Apple devices.
-
-The clipboard is cleared 30 seconds after the copy, unless something else was copied meanwhile. To change the
-delay, set **Keep Clipboard Delay** in the [Workflow's Configuration](#configuration-variables). A value that isn't
-a number makes the copy fail rather than leave the secret on the clipboard.
-
-### How `pswsetup` keeps my data safe
-
-- creates `~/.config/alfred-psw-workflow/seed` (secure random, mode `600`) if it doesn't exist yet,
-- derives the encryption key from that seed, the cipher customisable "salt" and this Mac's hardware UUID,
-- writes the title, domain and username of each entry to `~/.cache/alfred-psw-workflow/apw_cache.enc` (mode `600`),
-  for quick search when using `psw`,
-- **overwrites with zeros then deletes the CSV file**, even if parsing fails. A CSV without a `Password` column isn't a Passwords export:
-  it is left untouched, so picking the wrong file can't delete it.
-
-The cache can only be decrypted on the Mac that created it. If you delete the seed or move to another Mac,
-run `pswsetup` again.
+We recommend exporting Passwords.csv to a [RAM disk](doc/security.md#exporting-to-a-ram-disk).
+See [doc/security.md](doc/security.md) for every measure in detail, and their limits.
 
 ## How it works
 
