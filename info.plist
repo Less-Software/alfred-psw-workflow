@@ -403,7 +403,7 @@ in the workflow's configuration and run `pswsetup` again.</string>
 	<key>variablesdontexport</key>
 	<array/>
 	<key>version</key>
-	<string>v0.2.0-rc1</string>
+	<string>v0.1.0-rc1</string>
 	<key>webaddress</key>
 	<string>https://less-software.sh/</string>
 </dict>
