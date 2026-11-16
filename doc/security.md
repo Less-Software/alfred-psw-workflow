@@ -48,8 +48,8 @@ On an SSD, the overwrite doesn't guarantee the data is gone (see [Limits](#limit
 
 ## Search cache encryption
 
-- The cache is encrypted with AES-256-CBC, with a new random IV at each `pswsetup`.
-- The key is derived with PBKDF2-HMAC-SHA1 (10,000 iterations, 32 bytes) from:
+- The cache is encrypted with `AES-256-CBC`, with a new random IV at each `pswsetup`.
+- The key is derived with `PBKDF2-HMAC-SHA1` (10,000 iterations, 32 bytes) from:
   - the seed: 256 random bits from Ruby's `SecureRandom`, created once and never overwritten. It is stored in your
     login keychain, which is encrypted with your login keychain password (normally your Mac login password), and
     reaches it through the standard input of `security`, never in a command line. Being random, it can't be guessed,
@@ -112,7 +112,7 @@ restore the list right away.
   it up. On an SSD, overwriting doesn't reach the original data, as the drive writes to new cells, and APFS snapshots
   can keep it too. Apple no longer offers a secure delete for SSDs and
   [recommends FileVault instead](https://support.apple.com/guide/disk-utility/erase-and-reformat-a-storage-device-dskutl14079/mac):
-  [export to a RAM disk](#exporting-passwordscsv), and turn on FileVault.
+  [export to a RAM disk](#exporting-to-a-ram-disk), and turn on FileVault.
 - **Software running as you** can read the seed, the hardware UUID and the cache like `psw` does, and so decrypt the
   titles, domains and usernames: the keychain lets `/usr/bin/security` read the seed without a prompt, and any
   program can run it. It can also read the clipboard while a password is on it.

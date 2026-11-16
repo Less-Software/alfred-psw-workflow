@@ -56,14 +56,13 @@ brew install jq   # only on macOS < 15; macOS 15+ ships /usr/bin/jq
 
 Then set up `apw`: you'll need a compatible browser (Chrome will do) with the
 [iCloud Passwords extension](https://chromewebstore.google.com/detail/icloud-passwords/pejdijmoenmkgeppbflobdenhhabjlaj?hl=en) installed and the `apw` background daemon installed & running).
+Note that you don't even have to actually use/launch it, having it installed is enough.
 
 By following the [`apw` Getting Started guide](https://github.com/bendews/apw#getting-started).
 `apw auth` must be run again every time the daemon restarts (for example after a reboot):
 `pswsetup` can install a launch agent that does it for you.
 
-The scripts find Homebrew's `ruby`, `apw` and `jq` with `brew --prefix <formula>`, so `brew` must be on
-the `$PATH` Alfred runs scripts with. The Ruby scripts start with a short `/bin/sh` launcher that re-runs
-them with Homebrew's ruby, because a shebang line can't call `brew`.
+The scripts locate Homebrew's `ruby`, `apw` and `jq` using `brew --prefix <formula>`.
 
 ### `pswsetup` command
 
