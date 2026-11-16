@@ -59,12 +59,25 @@ rescue CSV::MalformedCSVError => e
 end
 fail! "Error: #{csv_path} is not a Passwords export (no Password column), left untouched" unless headers&.include?('Password')
 
+# CRITICAL SECURITY STEP: overwrite then remove the CSV however the script ends (failed seed, parse error, exception…)
+at_exit do
+  if File.exist?(csv_path)
+    # shortcut: one in-place overwrite; SSD wear leveling or an APFS snapshot can still keep the old data, only a RAM disk avoids that
+    begin
+      File.open(csv_path, 'r+b') { |f| f.write("\0" * f.size); f.fsync }
+    rescue SystemCallError => e # e.g. a read-only file: still delete it below
+      STDERR.puts "Couldn't overwrite #{csv_path}: #{e.message}"
+    end
+    File.delete(csv_path)
+    puts "Secure cleanup: CSV file overwritten and removed successfully."
+  end
+end
+
 # 1. Derive encryption key from seed (generated on first run)
 begin
-  unless File.exist?(SEED_PATH)
-    FileUtils.mkdir_p(File.dirname(SEED_PATH), mode: 0700)
-    File.open(SEED_PATH, File::WRONLY | File::CREAT | File::EXCL, 0600) { |f| f.write(SecureRandom.hex(32)) }
-    puts "Generated new seed at #{SEED_PATH}"
+  unless read_seed
+    store_seed(SecureRandom.hex(32))
+    puts 'Generated new seed in the Keychain'
   end
   key = cache_key
 rescue => e
@@ -96,13 +109,6 @@ begin
   end
 rescue CSV::MalformedCSVError => e
   fail! "Error: unable to parse #{csv_path}: #{e.message}"
-ensure
-  # CRITICAL SECURITY STEP: Remove the CSV file immediately after parsing,
-  # even if an exception occurs during parsing.
-  if File.exist?(csv_path)
-    File.delete(csv_path)
-    puts "Secure cleanup: CSV file removed successfully."
-  end
 end
 
 # 3. Encrypt the parsed metadata payload (No passwords are ever stored in cache)

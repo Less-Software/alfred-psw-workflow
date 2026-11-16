@@ -1,14 +1,15 @@
 # alfred-psw-workflow (macOS only)
 
 <img width="64" height="64" alt="alfred-psw-icon" src="https://github.com/user-attachments/assets/a4cc102f-93ef-4811-b29a-db2288846162"><br>
+<a href="https://github.com/Less-Software/alfred-psw-workflow/actions/workflows/test.yml"><img alt="Test" src="https://github.com/Less-Software/alfred-psw-workflow/actions/workflows/test.yml/badge.svg"></a>
 
 Alfred workflow that lets you search Apple **Passwords.app** entries and copy a password (main action) or OTP code
 (alternative action) to *a secure, expiring clipboard*.
 
 Searching uses a pre-computed local encrypted cache of titles, domains and usernames (never passwords).
-This cache is created from a **Passwords.csv** export from **Password.app**, and imported via `pswsetup`.
+This cache is created from a **Passwords.csv** export from **Passwords.app**, and imported via `pswsetup`.
 
-Passwords and OTP codes are fetched live from Apple Passwords through [apw](https://github.com/bendews/apw),
+Passwords and OTP codes are fetched live from **Apple Passwords** through [`apw`](https://github.com/bendews/apw),
 and require authentication before being copied (via main password or Touch ID).
 
 ## Usage
@@ -33,9 +34,9 @@ On the selected entry:
 
 Touch ID is then required to unlock the entry. A notification confirms the copy.
 The clipboard is cleared 30 seconds later ([delay is configurable](#configuration-variables)),
-unless you copied something else meanwhile (see [Security](#security)).
+unless you copied something else meanwhile (see [Secure clipboard](doc/security.md#secure-clipboard)).
 
-apw finds entries by website, so for an entry without one, ↩ and ⌥↩ open Passwords.app instead.
+`apw` finds entries by website, so for an entry without one, ↩ and ⌥↩ open **Passwords.app** instead.
 
 <br>
 <div align="center">
@@ -53,14 +54,15 @@ brew install bendews/homebrew-tap/apw
 brew install jq   # only on macOS < 15; macOS 15+ ships /usr/bin/jq
 ```
 
-Then set up apw (a browser with the iCloud Passwords extension, the background daemon, and `apw auth` pairing)
-by following the [apw Getting Started guide](https://github.com/bendews/apw#getting-started).
-`apw auth` must be run again every time the daemon restarts (for example after a reboot):
-`pswsetup` installs a launch agent that does it for you (see below).
+Then set up `apw`: you'll need a compatible browser (Chrome will do) with the
+[iCloud Passwords extension](https://chromewebstore.google.com/detail/icloud-passwords/pejdijmoenmkgeppbflobdenhhabjlaj?hl=en) installed and the `apw` background daemon installed & running).
+Note that you don't even have to actually use/launch it, having it installed is enough.
 
-The scripts find Homebrew's `ruby`, `apw` and `jq` with `brew --prefix <formula>`, so `brew` must be on
-the `$PATH` Alfred runs scripts with. The Ruby scripts start with a short `/bin/sh` launcher that re-runs
-them with Homebrew's ruby, because a shebang line can't call `brew`.
+By following the [`apw` Getting Started guide](https://github.com/bendews/apw#getting-started).
+`apw auth` must be run again every time the daemon restarts (for example after a reboot):
+`pswsetup` can install a launch agent that does it for you.
+
+The scripts locate Homebrew's `ruby`, `apw` and `jq` using `brew --prefix <formula>`.
 
 ### `pswsetup` command
 
@@ -68,18 +70,19 @@ Builds the encrypted search cache from a Passwords CSV export.
 Run it once to set up, then again whenever you add, rename or delete entries in Passwords:
 `psw` only finds the entries that existed at the last sync.
 
-1. Export your passwords to a CSV file: in the Passwords app, **File → Export All Passwords…**
-   We recommend saving it to a RAM disk (see [Security](#security)).
+1. Export your passwords to a CSV file: in the **Passwords app**, **File → Export All Passwords…**
+   We recommend saving it to a [RAM disk](doc/security.md#exporting-passwordscsv).
 2. In Alfred, type `pswsetup` and select the CSV file in the file picker that opens.
 
 The cache is now ready and Passwords.csv has been deleted: you can start using `psw`.
 
 `pswsetup` also installs a LaunchAgent (`~/Library/LaunchAgents/sh.less-software.psw-workflow.apw-auth.plist`)
-that runs `src/launch_agent/agent_script.sh` at login and every 15 minutes. When apw isn't authenticated, it
-asks for the PIN shown by Apple Passwords. macOS doesn't let it read the workflow if Alfred's preferences are
-in Documents, Desktop or a cloud folder: the agent then says so in a dialog. To opt out, uncheck
-"APW Launch Agent" in the [Workflow's Configuration](#configuration-variables) and run `pswsetup` again: it
-removes the LaunchAgent. Deleting the workflow is enough too: at its next run, the LaunchAgent finds
+that runs `src/launch_agent/agent_script.sh` at login and every 15 minutes. When `apw` isn't authenticated, it
+asks for the PIN shown by **Apple Passwords**. macOS doesn't let it read the workflow if Alfred's preferences are
+in Documents, Desktop or a cloud folder: the agent then says so in a dialog.
+
+To opt out, uncheck **APW Launch Agent** in the [Workflow's Configuration](#configuration-variables) and run `pswsetup` again: 
+it removes the LaunchAgent. Deleting the workflow is enough too: at its next run, the LaunchAgent finds
 `src/launch_agent/agent_script.sh` gone and removes itself. Workflow updates need no `pswsetup`: each run
 brings the LaunchAgent up to date first.
 
@@ -95,140 +98,60 @@ The following variables are configurable via Alfred:
 
 | Name | Description | Default |
 |------|-------------|---------|
-| Search Keyword | Keyword to trigger password search | `psw` |
-| Cipher Salt | Salt used during key-derivation process for encryption | `alfred-psw-workflow` |
-| Keep Clipboard Delay | Number of seconds (decimals allowed) to keep password/OTP in secure clipboard | `30` |
-| APW Launch Agent | Let `pswsetup` install the launch agent that keeps apw authenticated (unchecked: remove it) | checked |
+| **Search Keyword** | Keyword to trigger password search | `psw` |
+| **Cipher Salt** | Salt used during key-derivation process for encryption | `alfred-psw-workflow` |
+| **Keep Clipboard Delay** | Number of seconds (decimals allowed) to keep password/OTP in secure clipboard | `30` |
+| **APW Launch Agent** | Let `pswsetup` install the launch agent that keeps `apw` authenticated (unchecked: remove it) | checked |
 
 ## Troubleshooting
 
 | Message | Fix |
 |---------|-----|
 | `The apw daemon isn't running or isn't responding…` (dialog) | Restart the daemon in Terminal: `brew services restart apw` (Homebrew install) or `apw start` (custom install). The dialog comes back every 15 minutes until it answers. |
-| `macOS blocks the apw agent from reading the workflow folder…` (dialog) | Move Alfred's preferences out of Documents, Desktop or a cloud folder (Alfred Preferences → Advanced → Syncing), or uncheck "APW Launch Agent" and run `pswsetup`. |
-| `apw execution failed or canceled` | Touch ID was canceled, or the apw daemon isn't running or paired: start it and run `apw auth` again (needed after every reboot; the APW Launch Agent asks for the PIN within 15 minutes). |
-| `No Password found for this username` | apw found no password for this account, for example because it was deleted or renamed since the last sync: run `pswsetup`. |
+| `macOS blocks the apw agent from reading the workflow folder…` (dialog) | Move Alfred's preferences out of Documents, Desktop or a cloud folder (Alfred Preferences → Advanced → Syncing), or uncheck **APW Launch Agent** and run `pswsetup`. |
+| `apw execution failed or canceled` | Touch ID was canceled, or the `apw` daemon isn't running or paired: start it and run `apw auth` again (needed after every reboot; the **APW Launch Agent** asks for the PIN within 15 minutes). |
+| `No Password found for this username` | `apw` found no password for this account, for example because it was deleted or renamed since the last sync: run `pswsetup`. |
 | `No OTP found for this username` | The entry has no verification code in Passwords. |
 | `jq not found: brew install jq` | Install jq (macOS < 15 only). |
 | `Failed to copy to clipboard` | macOS refused the clipboard write: try again, and check the Alfred debugger for the error. |
-| `Seed or Cache missing. Please run pswsetup.` | Run `pswsetup`. |
-| `Decryption or Parsing Error` | The cache was made on another Mac or with another seed, or is damaged: run `pswsetup`. The subtitle shows the cause. |
+| `Cache missing. Please run pswsetup.` | Run `pswsetup`. |
+| `Decryption or Parsing Error` | The cache was made on another Mac or with another seed, the seed is missing from your login keychain, or the cache is damaged: run `pswsetup`. The subtitle shows the cause. |
 | `Error: unable to parse …` (after `pswsetup`) | The CSV isn't a valid Passwords export: export it again. |
 | `Error: … is not a Passwords export` (after `pswsetup`) | The picked CSV has no `Password` column, so it was left untouched: pick your Passwords export. |
-| A result says `can't copy without website` | apw finds entries by website, so selecting an entry without one opens Passwords.app instead: copy it from there. |
+| A result says `can't copy without website` | `apw` finds entries by website, so selecting an entry without one opens **Passwords.app** instead: copy it from there. |
 
 If nothing happens at all, open the workflow in Alfred Preferences, click the debugger (🐞) icon and try
 again: it shows each step and any error. A common cause is `brew` missing from the `$PATH` Alfred runs scripts with.
 
 ## Security
 
-*Note:* The Passwords.csv file exported by Passwords.app contains every password in clear text.
-Even though `pswsetup` deletes it, a file written to your disk can be indexed by Spotlight or
-copied by Time Machine before then, and deleted data can stay recoverable on the drive.
+- Encrypted search cache, without passwords.
+- Passwords and OTP codes fetched live, after Touch ID.
+- Passwords.csv overwritten and deleted after import.
+- Secure, expiring clipboard.
+- `apw` PIN never stored.
 
-We recommend you export it to a RAM disk instead, so it never touches the disk.
-[RAM Folder](https://less-software.sh/ram-folder) is a modern, reliable way to do this:
-create a RAM Folder with **Sync RAM Folder** turned off, save the export there, and select it in the `pswsetup`
-file picker.
-
-If you export to a regular folder instead, be sure to exclude it from Time Machine backups and from Spotlight
-indexing in System Settings.
-
-### How copied passwords are protected
-
-Passwords and OTP codes are copied with the [nspasteboard.org](http://nspasteboard.org) concealed and transient
-markers, which tell clipboard managers that respect them not to record the copy. They also stay off
-Universal Clipboard, so they aren't sent to your other Apple devices.
-
-The clipboard is cleared 30 seconds after the copy, unless something else was copied meanwhile. To change the
-delay, set "Keep Clipboard Delay" in the [Workflow's Configuration](#configuration-variables). A value that isn't
-a number makes the copy fail rather than leave the secret on the clipboard.
-
-### How `pswsetup` keeps my data safe
-
-- creates `~/.config/alfred-psw-workflow/seed` (secure random, mode `600`) if it doesn't exist yet,
-- derives the encryption key from that seed, the cipher customisable "salt" and this Mac's hardware UUID,
-- writes the title, domain and username of each entry to `~/.cache/alfred-psw-workflow/apw_cache.enc` (mode `600`),
-  for quick search when using `psw`,
-- **deletes the CSV file**, even if parsing fails. A CSV without a `Password` column isn't a Passwords export:
-  it is left untouched, so picking the wrong file can't delete it.
-
-The cache can only be decrypted on the Mac that created it. If you delete the seed or move to another Mac,
-run `pswsetup` again.
+We recommend exporting Passwords.csv to a [RAM disk](doc/security.md#exporting-passwordscsv).
+See [doc/security.md](doc/security.md) for every measure in detail, and their limits.
 
 ## How it works
 
-### `src/main.rb`: Alfred Script Filter (`psw`)
-
-Runs on every keystroke with the query as `$1`. Once the query has at least 4 characters, it decrypts
-the cache, keeps the entries whose title, domain or username contains the query, and returns them to Alfred
-as Script Filter JSON. Each result's `arg` is `username|domain`.
-
-### `src/setup_workflow.rb`: workflow setup (`pswsetup`)
-
-Runs when invoked via `pswsetup`: it installs, updates or removes the apw auth LaunchAgent (with
-`src/launch_agent/generate.rb`), then uses AppleScript to open a file picker where the user selects their
-Passwords.csv export, then builds the cache from it.
-You can also run it directly: `src/setup_workflow.rb path/to/Passwords.csv`.
-
-Both Ruby scripts derive the cache key with `src/cache_key.rb`.
-
-### `src/launch_agent/generate.rb`: apw auth LaunchAgent
-
-Fills `src/launch_agent/sh.less-software.psw-workflow.apw-auth.plist.tpl` with the paths of
-`src/launch_agent/agent_script.sh` and the plist, and the current `$PATH` (launchd's lacks Homebrew). It
-writes the result to `~/Library/LaunchAgents/` and reloads the agent when the result differs from the
-installed plist or launchd hasn't loaded it, or removes the agent when `APW_LAUNCH_SCRIPT` is `0`.
-`setup_workflow.rb` calls it, and `agent_script.sh` runs it directly. Don't run it from a checkout in
-Documents or Desktop: the agent would point at that checkout, which macOS doesn't let it read.
-
-### `src/launch_agent/agent_script.sh`: apw authentication (LaunchAgent)
-
-Runs `generate.rb` first, so that a workflow update that changes the template updates the installed agent: the
-reload ends this run and starts the new agent. It then runs `apw pw list example.invalid`: `results` means apw
-is authenticated, and the `unpaired` error means the daemon runs but isn't authenticated. Any other answer means
-the daemon isn't running or is still starting (at login), so it retries for 30 seconds. If the daemon still
-doesn't answer, it shows a dialog with the commands that restart it (`brew services restart apw`, or
-`apw start` for a custom install) and a link to apw's Getting Started guide, and stops there. Once unpaired, it
-runs `apw auth request`, asks for the PIN in an AppleScript dialog and passes it to `apw auth response --pin`,
-asking again with a new PIN when it's wrong. Canceling the dialog, or a failed `apw auth request`, waits for the
-next run.
-
-### `src/actions/main.sh`: Alfred action (↩)
-
-Receives `username|domain`, runs `apw pw get <domain> <username>`, and copies the password of the first result
-whose username matches to the clipboard.
-
-### `src/actions/alt.sh`: Alfred alternative action (⌥↩)
-
-Receives `username|domain`, runs `apw otp get <domain>`, and copies the OTP `code` of the first result
-whose username matches to the clipboard.
-
-Both action scripts share `src/actions/apw_copy.sh`, which splits the argument on its last `|` (a username may contain one),
-runs apw and copies the result. They use `/usr/bin/jq` if present, otherwise `$(brew --prefix jq)/bin/jq`.
-
-The action scripts and `setup_workflow.rb` report the outcome (copied, or what failed) by printing it for Alfred's
-Post Notification output, so notifications show the workflow icon. Their stdout holds only that message, as
-`{"alfredworkflow": {"arg": "<message>", "variables": {"notification_title": "<title>"}}}`, and they exit 0 even on
-errors so that Alfred still shows it.
-
-### `src/actions/secret_pbcopy.sh`: secure copy
-
-Called by both actions with the secret on stdin. It copies it with JavaScript for Automation (`osascript -l JavaScript`),
-marked as concealed and transient and limited to this Mac, then starts a detached job that clears the clipboard
-after `KEEP_CLIPBOARD_DELAY` seconds (["Keep Clipboard Delay"](#configuration-variables)) if the clipboard hasn't changed since.
+See [doc/files.md](doc/files.md) for what each script does.
 
 ## Contribute
 
 - Fork https://github.com/Less-Software/alfred-psw-workflow
 - Clone it to your development machine
-- Add tests for your change and run `rake` before opening a pull request
+- Add tests for your change and run `bundle exec rake` before opening a pull request
 - Open a pull request targeting the official repository
 
 ### Tests
 
+Ruby 3.1 or later:
+
 ```sh
-rake
+bundle install
+bundle exec rake
 ```
 
 The tests run on macOS only. They use fake `HOME` and `PATH` directories, so they never touch your real

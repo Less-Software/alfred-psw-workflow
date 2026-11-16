@@ -20,8 +20,8 @@ if query.length < 4
   exit 0
 end
 
-unless File.exist?(SEED_PATH) && File.exist?(CACHE_PATH)
-  AlfredOutput.render_error("Seed or Cache missing. Please run pswsetup.",
+unless File.exist?(CACHE_PATH) # a missing seed fails the decryption below, with its cause in the subtitle
+  AlfredOutput.render_error("Cache missing. Please run pswsetup.",
     "Type pswsetup in Alfred and select your Passwords CSV export")
   exit 0
 end

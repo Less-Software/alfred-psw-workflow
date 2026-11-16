@@ -4,14 +4,16 @@ require 'open3'
 require 'tmpdir'
 require 'json'
 require 'fileutils'
+require_relative 'fake_keychain'
 
 class MainTest < Minitest::Test
+  include FakeKeychain
   parallelize_me! # each test uses its own temp dir or pasteboard, so they can share the process
 
   def setup
     @home = Dir.mktmpdir # scripts write under ~, so a fake HOME protects the real seed/cache
-    @seed = File.join(@home, '.config/alfred-psw-workflow/seed')
     @cache = File.join(@home, '.cache/alfred-psw-workflow/apw_cache.enc')
+    create_keychain
   end
 
   def teardown = FileUtils.rm_rf(@home)
@@ -48,8 +50,16 @@ class MainTest < Minitest::Test
 
   def test_missing_cache
     items = search('github')
-    assert_equal 'Seed or Cache missing. Please run pswsetup.', items[0]['title']
+    assert_equal 'Cache missing. Please run pswsetup.', items[0]['title']
     assert_match(/pswsetup/, items[0]['subtitle'])
+  end
+
+  def test_missing_seed
+    build_cache
+    delete_seed
+    items = search('github')
+    assert_equal 'Decryption or Parsing Error', items[0]['title']
+    assert_match(/no seed in the Keychain: run pswsetup/, items[0]['subtitle'])
   end
 
   def test_corrupt_cache
@@ -60,7 +70,8 @@ class MainTest < Minitest::Test
 
   def test_wrong_seed
     build_cache
-    File.write(@seed, 'f' * 64) # a copied cache must not open with another seed
+    delete_seed
+    add_seed('f' * 64) # a copied cache must not open with another seed
     assert_equal 'Decryption or Parsing Error', search('github')[0]['title']
   end
 
