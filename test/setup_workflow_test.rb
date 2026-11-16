@@ -4,17 +4,19 @@ require 'open3'
 require 'tmpdir'
 require 'json'
 require 'fileutils'
+require_relative 'fake_keychain'
 
 ROOT = File.expand_path('../src', __dir__)
 
 class SetupWorkflowTest < Minitest::Test
+  include FakeKeychain
   parallelize_me! # each test uses its own temp dir or pasteboard, so they can share the process
 
   def setup
     @home = Dir.mktmpdir # scripts write under ~, so a fake HOME protects the real seed/cache
     @csv = File.join(@home, 'pw.csv')
-    @seed = File.join(@home, '.config/alfred-psw-workflow/seed')
     @cache = File.join(@home, '.cache/alfred-psw-workflow/apw_cache.enc')
+    create_keychain
   end
 
   def teardown = FileUtils.rm_rf(@home)
@@ -38,7 +40,8 @@ class SetupWorkflowTest < Minitest::Test
     assert st.success?, err
     assert_match(/2 items processed/, out) # the empty row is skipped
     refute File.exist?(@csv)               # input CSV is deleted
-    [@seed, @cache].each { |f| assert_equal 0o600, File.stat(f).mode & 0o777 }
+    assert_equal 0o600, File.stat(@cache).mode & 0o777
+    assert_match(/\A\h{64}\z/, seed)       # 32 random bytes, in the keychain
 
     out, = run_script('main.rb', 'local')
     assert_equal 'admin|localhost:8080', JSON.parse(out)['items'].first['arg'] # non-default port kept
@@ -73,8 +76,7 @@ class SetupWorkflowTest < Minitest::Test
 
   def test_csv_deleted_when_seed_unreadable
     write_csv
-    FileUtils.mkdir_p(File.dirname(@seed))
-    File.write(@seed, '') # an empty seed makes the key derivation fail before parsing
+    add_seed('') # an empty seed makes the key derivation fail before parsing
     _, err, st = run_script('setup_workflow.rb', @csv)
     assert_equal 1, st.exitstatus
     assert_match(/Error reading seed/, err)
@@ -84,13 +86,13 @@ class SetupWorkflowTest < Minitest::Test
   def test_seed_reused
     write_csv
     assert run_script('setup_workflow.rb', @csv)[2].success?
-    seed = File.read(@seed)
+    first = seed
 
     write_csv
     out, err, st = run_script('setup_workflow.rb', @csv)
     assert st.success?, err
     refute_match(/Generated new seed/, out)
-    assert_equal seed, File.read(@seed)
+    assert_equal first, seed
   end
 
   def test_missing_argument
@@ -227,7 +229,7 @@ class SetupWorkflowTest < Minitest::Test
     assert @status.success?
     assert_empty @err
     refute File.exist?(@cache)
-    refute File.exist?(@seed) # canceled before anything is created
+    assert_nil seed # canceled before anything is created
   end
 
   def test_alfred_picked_file_missing

@@ -114,8 +114,8 @@ The following variables are configurable via Alfred:
 | `No OTP found for this username` | The entry has no verification code in Passwords. |
 | `jq not found: brew install jq` | Install jq (macOS < 15 only). |
 | `Failed to copy to clipboard` | macOS refused the clipboard write: try again, and check the Alfred debugger for the error. |
-| `Seed or Cache missing. Please run pswsetup.` | Run `pswsetup`. |
-| `Decryption or Parsing Error` | The cache was made on another Mac or with another seed, or is damaged: run `pswsetup`. The subtitle shows the cause. |
+| `Cache missing. Please run pswsetup.` | Run `pswsetup`. |
+| `Decryption or Parsing Error` | The cache was made on another Mac or with another seed, the seed is missing from your login keychain, or the cache is damaged: run `pswsetup`. The subtitle shows the cause. |
 | `Error: unable to parse …` (after `pswsetup`) | The CSV isn't a valid Passwords export: export it again. |
 | `Error: … is not a Passwords export` (after `pswsetup`) | The picked CSV has no `Password` column, so it was left untouched: pick your Passwords export. |
 | A result says `can't copy without website` | `apw` finds entries by website, so selecting an entry without one opens **Passwords.app** instead: copy it from there. |

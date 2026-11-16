@@ -75,10 +75,9 @@ end
 
 # 1. Derive encryption key from seed (generated on first run)
 begin
-  unless File.exist?(SEED_PATH)
-    FileUtils.mkdir_p(File.dirname(SEED_PATH), mode: 0700)
-    File.open(SEED_PATH, File::WRONLY | File::CREAT | File::EXCL, 0600) { |f| f.write(SecureRandom.hex(32)) }
-    puts "Generated new seed at #{SEED_PATH}"
+  unless read_seed
+    store_seed(SecureRandom.hex(32))
+    puts 'Generated new seed in the Keychain'
   end
   key = cache_key
 rescue => e

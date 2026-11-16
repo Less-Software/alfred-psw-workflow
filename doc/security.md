@@ -6,7 +6,7 @@ Everything the workflow does to keep your passwords safe, and what it can't prot
 
 | File | Contents | Mode |
 |------|----------|------|
-| `~/.config/alfred-psw-workflow/seed` | 32 random bytes, hex-encoded: the secret behind the cache key | `600` (folder created `700`) |
+| Login keychain (`~/Library/Keychains/login.keychain-db`), item `alfred-psw-workflow` | 32 random bytes, hex-encoded: the secret behind the cache key | encrypted with your login keychain password |
 | `~/.cache/alfred-psw-workflow/apw_cache.enc` | The title, domain and username of each entry, encrypted | `600` |
 | `~/Library/LaunchAgents/sh.less-software.psw-workflow.apw-auth.plist` | The paths of the agent script and of this plist, and your `$PATH` | default |
 
@@ -50,9 +50,10 @@ On an SSD, the overwrite doesn't guarantee the data is gone (see [Limits](#limit
 
 - The cache is encrypted with AES-256-CBC, with a new random IV at each `pswsetup`.
 - The key is derived with PBKDF2-HMAC-SHA1 (10,000 iterations, 32 bytes) from:
-  - the seed: 256 random bits from Ruby's `SecureRandom`, created once and never overwritten. It gets mode `600`
-    when it is created, so it is never readable by others, even briefly. Being random, it can't be guessed, whatever
-    the iteration count.
+  - the seed: 256 random bits from Ruby's `SecureRandom`, created once and never overwritten. It is stored in your
+    login keychain, which is encrypted with your login keychain password (normally your Mac login password), and
+    reaches it through the standard input of `security`, never in a command line. Being random, it can't be guessed,
+    whatever the iteration count.
   - a salt made of the **Cipher Salt** [configuration variable](../README.md#configuration-variables) and this Mac's
     hardware UUID (`IOPlatformUUID`). The UUID binds the cache to this Mac: a copy of the seed and the cache can't
     be decrypted on another Mac.
@@ -101,8 +102,9 @@ On an SSD, the overwrite doesn't guarantee the data is gone (see [Limits](#limit
 
 ## Tests
 
-The tests use fake `HOME` and `PATH` folders and a private pasteboard: they never touch your real seed, cache,
-clipboard or Passwords.
+The tests use fake `HOME` and `PATH` folders, throwaway keychains and a private pasteboard: they never touch your real
+seed, cache, clipboard or Passwords. Creating a throwaway keychain adds it to your keychain search list: the tests
+restore the list right away.
 
 ## Limits
 
@@ -112,7 +114,8 @@ clipboard or Passwords.
   [recommends FileVault instead](https://support.apple.com/guide/disk-utility/erase-and-reformat-a-storage-device-dskutl14079/mac):
   [export to a RAM disk](#exporting-passwordscsv), and turn on FileVault.
 - **Software running as you** can read the seed, the hardware UUID and the cache like `psw` does, and so decrypt the
-  titles, domains and usernames. It can also read the clipboard while a password is on it.
-- **The hardware UUID isn't secret:** System Information shows it. A copy of the seed and the cache (in a backup, for
-  example) can be decrypted by anyone who also knows it.
+  titles, domains and usernames: the keychain lets `/usr/bin/security` read the seed without a prompt, and any
+  program can run it. It can also read the clipboard while a password is on it.
+- **The hardware UUID isn't secret:** System Information shows it. A backup holds the cache and your login keychain:
+  anyone who also knows your login keychain password can decrypt it.
 - **Clipboard managers that ignore the nspasteboard.org markers** still record the copy.
