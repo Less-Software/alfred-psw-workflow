@@ -81,9 +81,8 @@ that runs `src/launch_agent/agent_script.sh` at login and every 15 minutes. When
 asks for the PIN shown by **Apple Passwords**. macOS doesn't let it read the workflow if Alfred's preferences are
 in Documents, Desktop or a cloud folder: the agent then says so in a dialog.
 
-To opt out, uncheck
-**APW Launch Agent** in the [Workflow's Configuration](#configuration-variables) and run `pswsetup` again: it
-removes the LaunchAgent. Deleting the workflow is enough too: at its next run, the LaunchAgent finds
+To opt out, uncheck **APW Launch Agent** in the [Workflow's Configuration](#configuration-variables) and run `pswsetup` again: 
+it removes the LaunchAgent. Deleting the workflow is enough too: at its next run, the LaunchAgent finds
 `src/launch_agent/agent_script.sh` gone and removes itself. Workflow updates need no `pswsetup`: each run
 brings the LaunchAgent up to date first.
 
