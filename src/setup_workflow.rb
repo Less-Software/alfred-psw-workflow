@@ -100,8 +100,14 @@ ensure
   # CRITICAL SECURITY STEP: Remove the CSV file immediately after parsing,
   # even if an exception occurs during parsing.
   if File.exist?(csv_path)
+    # shortcut: one in-place overwrite; SSD wear leveling or an APFS snapshot can still keep the old data, only a RAM disk avoids that
+    begin
+      File.open(csv_path, 'r+b') { |f| f.write("\0" * f.size); f.fsync }
+    rescue SystemCallError => e # e.g. a read-only file: still delete it below
+      STDERR.puts "Couldn't overwrite #{csv_path}: #{e.message}"
+    end
     File.delete(csv_path)
-    puts "Secure cleanup: CSV file removed successfully."
+    puts "Secure cleanup: CSV file overwritten and removed successfully."
   end
 end
 

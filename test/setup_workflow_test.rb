@@ -62,6 +62,15 @@ class SetupWorkflowTest < Minitest::Test
     assert_equal 'zoë@例え.jp|example.com', item['arg']
   end
 
+  def test_csv_overwritten_before_delete
+    write_csv
+    size = File.size(@csv)
+    File.link(@csv, link = File.join(@home, 'link.csv')) # a hard link still shows the data after the delete
+    _, err, st = run_script('setup_workflow.rb', @csv)
+    assert st.success?, err
+    assert_equal "\0" * size, File.binread(link)
+  end
+
   def test_seed_reused
     write_csv
     assert run_script('setup_workflow.rb', @csv)[2].success?

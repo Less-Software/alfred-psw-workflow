@@ -127,8 +127,8 @@ again: it shows each step and any error. A common cause is `brew` missing from t
 ## Security
 
 *Note:* The Passwords.csv file exported by Passwords.app contains every password in clear text.
-Even though `pswsetup` deletes it, a file written to your disk can be indexed by Spotlight or
-copied by Time Machine before then, and deleted data can stay recoverable on the drive.
+Even though `pswsetup` overwrites and deletes it, a file written to your disk can be indexed by Spotlight or
+copied by Time Machine before then, and SSDs can keep overwritten data recoverable.
 
 We recommend you export it to a RAM disk instead, so it never touches the disk.
 [RAM Folder](https://less-software.sh/ram-folder) is a modern, reliable way to do this:
@@ -157,7 +157,7 @@ a number makes the copy fail rather than leave the secret on the clipboard.
 - derives the encryption key from that seed, the cipher customisable "salt" and this Mac's hardware UUID,
 - writes the title, domain and username of each entry to `~/.cache/alfred-psw-workflow/apw_cache.enc` (mode `600`),
   for quick search when using `psw`,
-- **deletes the CSV file**, even if parsing fails. A CSV without a `Password` column isn't a Passwords export:
+- **overwrites with zeros then deletes the CSV file**, even if parsing fails. A CSV without a `Password` column isn't a Passwords export:
   it is left untouched, so picking the wrong file can't delete it.
 
 The cache can only be decrypted on the Mac that created it. If you delete the seed or move to another Mac,
