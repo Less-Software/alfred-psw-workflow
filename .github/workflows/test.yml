@@ -10,9 +10,12 @@ jobs:
   test:
     # secret_pbcopy_test.rb runs the real JavaScript through osascript.
     runs-on: macos-latest
+    strategy:
+      matrix:
+        ruby-version: [ '3.4', '4.0' ]
     steps:
       - uses: actions/checkout@v4
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '4.0'
+          ruby-version: ${{ matrix.ruby-version }}
       - run: rake test
