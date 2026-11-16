@@ -71,6 +71,16 @@ class SetupWorkflowTest < Minitest::Test
     assert_equal "\0" * size, File.binread(link)
   end
 
+  def test_csv_deleted_when_seed_unreadable
+    write_csv
+    FileUtils.mkdir_p(File.dirname(@seed))
+    File.write(@seed, '') # an empty seed makes the key derivation fail before parsing
+    _, err, st = run_script('setup_workflow.rb', @csv)
+    assert_equal 1, st.exitstatus
+    assert_match(/Error reading seed/, err)
+    refute File.exist?(@csv)
+  end
+
   def test_seed_reused
     write_csv
     assert run_script('setup_workflow.rb', @csv)[2].success?
