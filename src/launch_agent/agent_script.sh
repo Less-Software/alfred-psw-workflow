@@ -57,6 +57,7 @@ while :; do
     wait "$apw" && exit 0
   else
     kill "$apw" # before closing its stdin: apw's prompt spins on end of input
+    wait "$apw" # until it exits: the FIFOs reopened below would connect to it, and read its end of file
   fi
   exec 3>&- 4<&-
   prompt="Wrong PIN. Enter the new PIN shown by Apple Passwords:"
