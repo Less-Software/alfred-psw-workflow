@@ -36,7 +36,12 @@ create a RAM Folder with **Sync RAM Folder** turned off, save the export there, 
 file picker.
 
 Otherwise, you'll find every alternative method available to create a RAM Disk on macOS in this
-[macOS RAM Disk guide](https://less-software.sh/ram-folder/macos-ram-disk).
+[macOS RAM Disk guide](https://less-software.sh/ram-folder/macos-ram-disk) (just enable encryption 
+when creating the disk image).
+
+Instead, you can use an external hard disk (HDD, not an SSD or USB stick) that isn't indexed by Spotlight, isn't 
+backed up by Time Machine, and is formatted Mac OS Extended or exFAT, so that no APFS snapshot keeps a copy of the file.
+On flash storage, overwriting doesn't reach the original data, whatever the format.
 
 If you export to a regular folder instead, be sure to exclude it from Time Machine backups and from Spotlight
 indexing in System Settings.
