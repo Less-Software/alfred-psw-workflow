@@ -6,9 +6,9 @@ Alfred workflow that lets you search Apple **Passwords.app** entries and copy a 
 (alternative action) to *a secure, expiring clipboard*.
 
 Searching uses a pre-computed local encrypted cache of titles, domains and usernames (never passwords).
-This cache is created from a **Passwords.csv** export from **Password.app**, and imported via `pswsetup`.
+This cache is created from a **Passwords.csv** export from **Passwords.app**, and imported via `pswsetup`.
 
-Passwords and OTP codes are fetched live from Apple Passwords through [apw](https://github.com/bendews/apw),
+Passwords and OTP codes are fetched live from **Apple Passwords** through [`apw`](https://github.com/bendews/apw),
 and require authentication before being copied (via main password or Touch ID).
 
 ## Usage
@@ -35,7 +35,7 @@ Touch ID is then required to unlock the entry. A notification confirms the copy.
 The clipboard is cleared 30 seconds later ([delay is configurable](#configuration-variables)),
 unless you copied something else meanwhile (see [Security](#security)).
 
-`apw` finds entries by website, so for an entry without one, ↩ and ⌥↩ open Passwords.app instead.
+`apw` finds entries by website, so for an entry without one, ↩ and ⌥↩ open **Passwords.app** instead.
 
 <br>
 <div align="center">
@@ -70,19 +70,19 @@ Builds the encrypted search cache from a Passwords CSV export.
 Run it once to set up, then again whenever you add, rename or delete entries in Passwords:
 `psw` only finds the entries that existed at the last sync.
 
-1. Export your passwords to a CSV file: in the Passwords app, **File → Export All Passwords…**
+1. Export your passwords to a CSV file: in the **Passwords app**, **File → Export All Passwords…**
    We recommend saving it to a RAM disk (see [Security](#security)).
 2. In Alfred, type `pswsetup` and select the CSV file in the file picker that opens.
 
 The cache is now ready and Passwords.csv has been deleted: you can start using `psw`.
 
 `pswsetup` also installs a LaunchAgent (`~/Library/LaunchAgents/sh.less-software.psw-workflow.apw-auth.plist`)
-that runs `src/launch_agent/agent_script.sh` at login and every 15 minutes. When apw isn't authenticated, it
-asks for the PIN shown by Apple Passwords. macOS doesn't let it read the workflow if Alfred's preferences are
+that runs `src/launch_agent/agent_script.sh` at login and every 15 minutes. When `apw` isn't authenticated, it
+asks for the PIN shown by **Apple Passwords**. macOS doesn't let it read the workflow if Alfred's preferences are
 in Documents, Desktop or a cloud folder: the agent then says so in a dialog.
 
 To opt out, uncheck
-"APW Launch Agent" in the [Workflow's Configuration](#configuration-variables) and run `pswsetup` again: it
+**APW Launch Agent** in the [Workflow's Configuration](#configuration-variables) and run `pswsetup` again: it
 removes the LaunchAgent. Deleting the workflow is enough too: at its next run, the LaunchAgent finds
 `src/launch_agent/agent_script.sh` gone and removes itself. Workflow updates need no `pswsetup`: each run
 brings the LaunchAgent up to date first.
@@ -99,19 +99,19 @@ The following variables are configurable via Alfred:
 
 | Name | Description | Default |
 |------|-------------|---------|
-| Search Keyword | Keyword to trigger password search | `psw` |
-| Cipher Salt | Salt used during key-derivation process for encryption | `alfred-psw-workflow` |
-| Keep Clipboard Delay | Number of seconds (decimals allowed) to keep password/OTP in secure clipboard | `30` |
-| APW Launch Agent | Let `pswsetup` install the launch agent that keeps apw authenticated (unchecked: remove it) | checked |
+| **Search Keyword** | Keyword to trigger password search | `psw` |
+| **Cipher Salt** | Salt used during key-derivation process for encryption | `alfred-psw-workflow` |
+| **Keep Clipboard Delay** | Number of seconds (decimals allowed) to keep password/OTP in secure clipboard | `30` |
+| **APW Launch Agent** | Let `pswsetup` install the launch agent that keeps `apw` authenticated (unchecked: remove it) | checked |
 
 ## Troubleshooting
 
 | Message | Fix |
 |---------|-----|
 | `The apw daemon isn't running or isn't responding…` (dialog) | Restart the daemon in Terminal: `brew services restart apw` (Homebrew install) or `apw start` (custom install). The dialog comes back every 15 minutes until it answers. |
-| `macOS blocks the apw agent from reading the workflow folder…` (dialog) | Move Alfred's preferences out of Documents, Desktop or a cloud folder (Alfred Preferences → Advanced → Syncing), or uncheck "APW Launch Agent" and run `pswsetup`. |
-| `apw execution failed or canceled` | Touch ID was canceled, or the apw daemon isn't running or paired: start it and run `apw auth` again (needed after every reboot; the APW Launch Agent asks for the PIN within 15 minutes). |
-| `No Password found for this username` | apw found no password for this account, for example because it was deleted or renamed since the last sync: run `pswsetup`. |
+| `macOS blocks the apw agent from reading the workflow folder…` (dialog) | Move Alfred's preferences out of Documents, Desktop or a cloud folder (Alfred Preferences → Advanced → Syncing), or uncheck **APW Launch Agent** and run `pswsetup`. |
+| `apw execution failed or canceled` | Touch ID was canceled, or the `apw` daemon isn't running or paired: start it and run `apw auth` again (needed after every reboot; the **APW Launch Agent** asks for the PIN within 15 minutes). |
+| `No Password found for this username` | `apw` found no password for this account, for example because it was deleted or renamed since the last sync: run `pswsetup`. |
 | `No OTP found for this username` | The entry has no verification code in Passwords. |
 | `jq not found: brew install jq` | Install jq (macOS < 15 only). |
 | `Failed to copy to clipboard` | macOS refused the clipboard write: try again, and check the Alfred debugger for the error. |
@@ -119,14 +119,14 @@ The following variables are configurable via Alfred:
 | `Decryption or Parsing Error` | The cache was made on another Mac or with another seed, or is damaged: run `pswsetup`. The subtitle shows the cause. |
 | `Error: unable to parse …` (after `pswsetup`) | The CSV isn't a valid Passwords export: export it again. |
 | `Error: … is not a Passwords export` (after `pswsetup`) | The picked CSV has no `Password` column, so it was left untouched: pick your Passwords export. |
-| A result says `can't copy without website` | apw finds entries by website, so selecting an entry without one opens Passwords.app instead: copy it from there. |
+| A result says `can't copy without website` | `apw` finds entries by website, so selecting an entry without one opens **Passwords.app** instead: copy it from there. |
 
 If nothing happens at all, open the workflow in Alfred Preferences, click the debugger (🐞) icon and try
 again: it shows each step and any error. A common cause is `brew` missing from the `$PATH` Alfred runs scripts with.
 
 ## Security
 
-*Note:* The Passwords.csv file exported by Passwords.app contains every password in clear text.
+*Note:* The Passwords.csv file exported by **Passwords.app** contains every password in clear text.
 Even though `pswsetup` overwrites and deletes it, a file written to your disk can be indexed by Spotlight or
 copied by Time Machine before then, and SSDs can keep overwritten data recoverable.
 
@@ -148,7 +148,7 @@ markers, which tell clipboard managers that respect them not to record the copy.
 Universal Clipboard, so they aren't sent to your other Apple devices.
 
 The clipboard is cleared 30 seconds after the copy, unless something else was copied meanwhile. To change the
-delay, set "Keep Clipboard Delay" in the [Workflow's Configuration](#configuration-variables). A value that isn't
+delay, set **Keep Clipboard Delay** in the [Workflow's Configuration](#configuration-variables). A value that isn't
 a number makes the copy fail rather than leave the secret on the clipboard.
 
 ### How `pswsetup` keeps my data safe
