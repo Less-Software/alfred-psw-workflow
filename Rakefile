@@ -23,7 +23,15 @@ task :bump, [:version] do |_, args|
   abort 'info.plist has uncommitted changes' unless system('git', 'diff', '--quiet', 'HEAD', '--',
     'info.plist')
   sh 'plutil', '-replace', 'version', '-string', v, 'info.plist'
-  sh 'git', 'commit', '-q', '-m', "Release #{v}", '--', 'info.plist'
+  # Already at this version (e.g. its tag was deleted): there is nothing to commit, so tag HEAD if the user agrees
+  if system('git', 'diff', '--quiet', 'HEAD', '--', 'info.plist')
+    head = IO.popen(['git', 'log', '-1', '--format=%h %s'], &:read).strip
+    print "info.plist hasn't changed: its version is already #{v}. Tag HEAD (#{head}) as #{v}? [y/N] "
+    $stdout.flush # show the question before waiting for the answer, even when stdout isn't a terminal
+    abort 'Canceled: nothing tagged' unless $stdin.gets.to_s.strip.match?(/\Ay(es)?\z/i)
+  else
+    sh 'git', 'commit', '-q', '-m', "Release #{v}", '--', 'info.plist'
+  end
   sh 'git', 'tag', '-a', v, '-m', v
 end
 
