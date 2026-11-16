@@ -86,8 +86,9 @@ indexing in System Settings.
 - The agent runs as you (a LaunchAgent, not a system-wide daemon), at login and every 15 minutes.
 - It checks whether `apw` is authenticated by looking up `example.invalid`, a reserved domain that can't match any
   entry: the check never fetches a password.
-- The PIN is asked in a macOS dialog, checked to be 6 digits, and passed straight to `apw auth response`: it is never
-  stored, and **Apple Passwords** shows a new one at each request.
+- The PIN is asked in a macOS dialog, checked to be 6 digits, and written to the prompt of `apw auth` through a
+  pipe: it never appears in a command line, which other processes can read, and is never stored.
+  **Apple Passwords** shows a new one at each request.
 - The values written to the plist are XML-escaped, so an unusual path can't change what the agent runs.
 - To remove the agent, uncheck **APW Launch Agent** in the [configuration](../README.md#configuration-variables) and
   run `pswsetup`. If you delete the workflow, the agent detects at its next run (within 15 minutes, or at the next
@@ -110,5 +111,3 @@ clipboard or Passwords.
 - **The hardware UUID isn't secret:** System Information shows it. A copy of the seed and the cache (in a backup, for
   example) can be decrypted by anyone who also knows it.
 - **Clipboard managers that ignore the nspasteboard.org markers** still record the copy.
-- **The PIN** is passed to `apw` as a command-line argument, which other processes running as you can read while `apw`
-  runs.

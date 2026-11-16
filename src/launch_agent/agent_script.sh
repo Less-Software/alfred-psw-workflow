@@ -34,14 +34,30 @@ Restart it in Terminal:
 }
 wait_for_daemon
 
+# `apw auth` makes Apple Passwords show a new PIN, then prompts for it on stdin. The PIN goes there through a FIFO,
+# never in a command line, which other processes can read. launchd won't start another run while this one waits.
+fifos=$(mktemp -d) && mkfifo "$fifos/in" "$fifos/out" || exit 0
+trap 'rm -rf "$fifos"' EXIT
 prompt="Enter the PIN shown by Apple Passwords to authenticate apw:"
-# launchd won't start another run while this one waits. auth request makes Apple Passwords show a new PIN:
-# when it fails, the next run tries again.
-while "$APW" auth request >/dev/null; do
+while :; do
+  "$APW" auth <"$fifos/in" >"$fifos/out" &
+  apw=$!
+  exec 3>"$fifos/in" 4<"$fifos/out"
+  # apw exits without prompting when the request fails: the next run tries again
+  while IFS= read -r -d : -u 4 text && [[ $text != *'Enter PIN' ]]; do :; done
+  [[ $text == *'Enter PIN' ]] || exit 0
+
   pin=$(osascript -e 'on run {prompt}' -e 'activate' \
     -e 'text returned of (display dialog prompt default answer "" with title "Passwords.app Workflow")' \
-    -e 'end run' "$prompt") || exit 0 # canceled: ask again at the next run
+    -e 'end run' "$prompt") || { kill "$apw"; exit 0; } # canceled: ask again at the next run
   pin=${pin//[[:space:]]/}
-  [[ $pin =~ ^[0-9]{6}$ ]] && "$APW" auth response --pin "$pin" >/dev/null && exit 0
+  if [[ $pin =~ ^[0-9]{6}$ ]]; then
+    printf '%s\r' "$pin" >&3 # printf is a builtin: no command line holds the PIN
+    cat <&4 >/dev/null # apw echoes the PIN: keep reading until it exits, or its writes would fail
+    wait "$apw" && exit 0
+  else
+    kill "$apw" # before closing its stdin: apw's prompt spins on end of input
+  fi
+  exec 3>&- 4<&-
   prompt="Wrong PIN. Enter the new PIN shown by Apple Passwords:"
 done

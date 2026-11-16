@@ -8,7 +8,8 @@ class AgentTest < Minitest::Test
   parallelize_me! # each test uses its own temp dir
 
   # Fakes prepended to PATH, logging their calls to $FAKE_DIR/calls. apw: the Nth `pw list` prints the Nth line of
-  # LIST (to stderr, like apw's errors), `auth request` exits REQUEST_STATUS, and PIN 111111 is wrong. Dialogs add their text to
+  # LIST (to stderr, like apw's errors). `auth` exits REQUEST_STATUS when it isn't 0, else prompts like apw (no newline),
+  # logs the PIN read on stdin up to Return, and fails when it is 111111. Dialogs add their text to
   # $FAKE_DIR/dialogs; the Nth one answers the Nth line of PIN, or is canceled when there is none.
   # sleep returns at once.
   FAKES = {
@@ -18,8 +19,11 @@ class AgentTest < Minitest::Test
       echo "apw $*" >> "$FAKE_DIR/calls"
       case "$*" in
         'pw list'*) printf '%s\n' "$LIST" | sed -n "$(grep -c 'pw list' "$FAKE_DIR/calls")p" >&2 ;;
-        'auth request') exit "${REQUEST_STATUS:-0}" ;;
-        'auth response --pin 111111') exit 9 ;;
+        auth)
+          [ "${REQUEST_STATUS:-0}" = 0 ] || exit "$REQUEST_STATUS"
+          printf '? Enter PIN: '
+          IFS= read -r -d $'\r' pin && echo "stdin $pin" >> "$FAKE_DIR/calls" && printf '%s\n' "$pin"
+          [ "$pin" != 111111 ] ;;
       esac
     SH
     'osascript' => <<~'SH',
@@ -67,20 +71,26 @@ class AgentTest < Minitest::Test
   end
 
   def test_not_authenticated
-    assert_equal [UPDATE, LIST, 'apw auth request', 'dialog', 'apw auth response --pin 123456'],
+    assert_equal [UPDATE, LIST, 'apw auth', 'dialog', 'stdin 123456'],
       run_script(list: [UNPAIRED], pin: " 123456\n")
   end
 
   def test_wrong_pin_asks_again_with_a_new_pin
     assert_equal [UPDATE, LIST,
-                  'apw auth request', 'dialog', 'apw auth response --pin 111111',
-                  'apw auth request', 'dialog', 'apw auth response --pin 123456'],
+                  'apw auth', 'dialog', 'stdin 111111',
+                  'apw auth', 'dialog', 'stdin 123456'],
       run_script(list: [UNPAIRED], pin: "111111\n123456")
     assert_match(/\AWrong PIN/, File.readlines(File.join(@dir, 'dialogs')).last)
   end
 
+  def test_malformed_pin_asks_again_with_a_new_pin
+    assert_equal [UPDATE, LIST, 'apw auth', 'dialog', 'apw auth', 'dialog', 'stdin 123456'],
+      run_script(list: [UNPAIRED], pin: "12ab\n123456")
+    assert_match(/\AWrong PIN/, File.readlines(File.join(@dir, 'dialogs')).last)
+  end
+
   def test_daemon_starting # at login
-    assert_equal [UPDATE, LIST, LIST, 'apw auth request', 'dialog', 'apw auth response --pin 123456'],
+    assert_equal [UPDATE, LIST, LIST, 'apw auth', 'dialog', 'stdin 123456'],
       run_script(list: [NOT_RUNNING, UNPAIRED], pin: '123456')
   end
 
@@ -92,10 +102,10 @@ class AgentTest < Minitest::Test
   end
 
   def test_pin_request_failed # the next run tries again
-    assert_equal [UPDATE, LIST, 'apw auth request'], run_script(list: [UNPAIRED], request_status: 9)
+    assert_equal [UPDATE, LIST, 'apw auth'], run_script(list: [UNPAIRED], request_status: 9)
   end
 
   def test_dialog_canceled
-    assert_equal [UPDATE, LIST, 'apw auth request', 'dialog'], run_script(list: [UNPAIRED])
+    assert_equal [UPDATE, LIST, 'apw auth', 'dialog'], run_script(list: [UNPAIRED])
   end
 end

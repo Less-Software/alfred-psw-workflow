@@ -32,9 +32,9 @@ is authenticated, and the `unpaired` error means the daemon runs but isn't authe
 the daemon isn't running or is still starting (at login), so it retries for 30 seconds. If the daemon still
 doesn't answer, it shows a dialog with the commands that restart it (`brew services restart apw`, or
 `apw start` for a custom install) and a link to `apw`'s Getting Started guide, and stops there. Once unpaired, it
-runs `apw auth request`, asks for the PIN in an AppleScript dialog and passes it to `apw auth response --pin`,
-asking again with a new PIN when it's wrong. Canceling the dialog, or a failed `apw auth request`, waits for the
-next run.
+runs `apw auth`, which requests a PIN and prompts for it, asks for the PIN in an AppleScript dialog and writes it to
+that prompt through a FIFO, asking again with a new PIN when it's wrong. Canceling the dialog, or a failed request,
+waits for the next run.
 
 ## `src/actions/main.sh`: Alfred action (↩)
 
